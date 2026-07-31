@@ -316,11 +316,20 @@
             const t = Math.min(pickT / 0.8, 1);
             const ease = t * t * (3 - 2 * t);
             const from = mesh.userData.from || (mesh.userData.from = mesh.position.clone());
-            const to = new THREE.Vector3(cart.position.x - 0.1 + cartStack % 2 * 0.3, 0.55 + Math.floor(cartStack / 2) * 0.35, cart.position.z);
+            const to = new THREE.Vector3(
+              cart.position.x - 0.35 + cartStack % 3 * 0.35,
+              0.52 + Math.floor(cartStack / 3) * 0.32,
+              cart.position.z
+            );
             mesh.position.lerpVectors(from, to, ease);
             mesh.scale.setScalar(1 - 0.45 * ease);
           }
           if (pickT >= 1) {
+            if (mesh) {
+              cart.attach(mesh);
+              mesh.position.set(-0.35 + cartStack % 3 * 0.35, 0.17 + Math.floor(cartStack / 3) * 0.32, 0);
+              mesh.rotation.set(0, 0, 0);
+            }
             cartStack++;
             planIdx++;
             setHud((h) => ({ ...h, picked: planIdx, current: planIdx < plan.length ? "Walking to next slot" : "Order complete" }));
