@@ -275,6 +275,10 @@
       let planIdx = 0;
       let pickT = 0;
       let cartStack = 0;
+      const BED_TOP = 0.41;
+      const COL_X = [-0.36, 0, 0.36];
+      const colTop = [BED_TOP, BED_TOP, BED_TOP];
+      const boxH = (m) => (m.geometry.parameters.height || 0.8) * m.scale.y;
       let dist = 0;
       let lastX = picker.position.x;
       const SPEED = 3.2;
@@ -316,9 +320,11 @@
             const t = Math.min(pickT / 0.8, 1);
             const ease = t * t * (3 - 2 * t);
             const from = mesh.userData.from || (mesh.userData.from = mesh.position.clone());
+            const col = cartStack % 3;
+            const h = boxH(mesh) * (1 - 0.45);
             const to = new THREE.Vector3(
-              cart.position.x - 0.35 + cartStack % 3 * 0.35,
-              0.52 + Math.floor(cartStack / 3) * 0.32,
+              cart.position.x + COL_X[col],
+              colTop[col] + h / 2,
               cart.position.z
             );
             mesh.position.lerpVectors(from, to, ease);
@@ -326,9 +332,12 @@
           }
           if (pickT >= 1) {
             if (mesh) {
+              const col = cartStack % 3;
+              const h = boxH(mesh);
               cart.attach(mesh);
-              mesh.position.set(-0.35 + cartStack % 3 * 0.35, 0.17 + Math.floor(cartStack / 3) * 0.32, 0);
+              mesh.position.set(COL_X[col], colTop[col] + h / 2, 0);
               mesh.rotation.set(0, 0, 0);
+              colTop[col] += h + 0.015;
             }
             cartStack++;
             planIdx++;
