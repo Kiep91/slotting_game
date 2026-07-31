@@ -286,11 +286,11 @@
         const dt = Math.min(clock.getDelta(), 0.05);
         if (mode === "walk" || mode === "return") {
           const tx = mode === "walk" ? targetXFor() : -2.6;
-          const dir = Math.sign(tx - picker.position.x);
-          picker.position.x += dir * SPEED * dt;
-          picker.position.y = Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.05;
-          if (dir > 0 && picker.position.x >= tx || dir < 0 && picker.position.x <= tx) {
+          const dx = tx - picker.position.x;
+          const step = SPEED * dt;
+          if (Math.abs(dx) <= step + 1e-6) {
             picker.position.x = tx;
+            picker.position.y = 0;
             if (mode === "walk") {
               if (planIdx < plan.length) {
                 mode = "pick";
@@ -304,6 +304,9 @@
               doneRef.current = true;
               setTimeout(() => onDone(Math.round(dist)), 500);
             }
+          } else {
+            picker.position.x += Math.sign(dx) * step;
+            picker.position.y = Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.05;
           }
         } else if (mode === "pick") {
           pickT += dt;
@@ -329,8 +332,8 @@
         setHud((h) => Math.abs(h.dist - dist) > 0.5 ? { ...h, dist } : h);
         cart.position.x += (picker.position.x - 1.4 - cart.position.x) * Math.min(dt * 4, 1);
         const cx = picker.position.x;
-        camera.position.lerp(new THREE.Vector3(cx - 5.5, 6.5, 10.5), 0.06);
-        camera.lookAt(cx + 1.5, 1, 0);
+        camera.position.lerp(new THREE.Vector3(cx - 6.5, 4.6, 2), 0.06);
+        camera.lookAt(cx + 4, 1.1, 0);
         renderer.render(scene, camera);
       }
       animate();
