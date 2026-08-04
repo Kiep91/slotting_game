@@ -55,13 +55,19 @@
   const BAY_M = 4;
   const CROSS_M = 4;
   const AISLE_LEN = BAYS.length * BAY_M;
+  const TUNNEL_AFTER_BAY = 3;
+  const TUNNEL_M = TUNNEL_AFTER_BAY * BAY_M;
+  const CROSS_Z_M = 7;
   const slotId = (aisle, side, bay) => `${aisle}${side}-${String(bay).padStart(2, "0")}`;
   const ALL_SLOTS = [];
   AISLES.forEach((a) => SIDES.forEach((s) => BAYS.forEach((b) => ALL_SLOTS.push({ id: slotId(a, s, b), aisle: a, side: s, bay: b }))));
   const slotById = Object.fromEntries(ALL_SLOTS.map((s) => [s.id, s]));
   function pathDist(slot) {
-    if (slot.aisle === 1) return slot.bay * BAY_M;
-    return AISLE_LEN + CROSS_M + (BAYS.length + 1 - slot.bay) * BAY_M;
+    const along = slot.bay * BAY_M;
+    if (slot.aisle === 1) return along;
+    const viaTunnel = TUNNEL_M + CROSS_Z_M + Math.abs(along - TUNNEL_M);
+    const viaFarEnd = AISLE_LEN + CROSS_M + CROSS_Z_M + (AISLE_LEN + CROSS_M - along);
+    return Math.min(viaTunnel, viaFarEnd);
   }
   const SLOT_DISTS = ALL_SLOTS.map(pathDist).sort((a, b) => a - b);
   const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
@@ -84,12 +90,12 @@
   }
   function scoreTravel(loc) {
     const { score } = distanceScore(loc, "velocity");
-    const offenders = PRODUCTS.filter((p) => p.velocity >= 70 && loc[p.id].aisle === 2).sort((a, b) => b.velocity - a.velocity).map((p) => `${p.name} (${p.velocity} picks/day) sits in aisle 2 \u2014 ${pathDist(loc[p.id])} m into the tour on most orders`);
+    const offenders = PRODUCTS.filter((p) => p.velocity >= 70 && pathDist(loc[p.id]) >= 24).sort((a, b) => b.velocity - a.velocity).map((p) => `${p.name} (${p.velocity} picks/day) sits ${pathDist(loc[p.id])} m out \u2014 a long walk on most orders`);
     return { score, offenders };
   }
   function scoreHandling(loc) {
     const { score } = distanceScore(loc, "weight");
-    const offenders = PRODUCTS.filter((p) => p.weight >= 7 && loc[p.id].aisle === 2).sort((a, b) => b.weight - a.weight).map((p) => `${p.name} (${p.weight}/10 weight) is carried ${pathDist(loc[p.id])} m back to the dock every time`);
+    const offenders = PRODUCTS.filter((p) => p.weight >= 7 && pathDist(loc[p.id]) >= 24).sort((a, b) => b.weight - a.weight).map((p) => `${p.name} (${p.weight}/10 weight) is carried ${pathDist(loc[p.id])} m back to the dock every time`);
     return { score, offenders };
   }
   function scoreDamage(loc) {
@@ -160,14 +166,17 @@
     }
     return picks;
   }
-  const AISLE_Z = { 1: 0, 2: 12 };
-  const RACK_Z = { "1A": -3, "1B": 3, "2A": 9, "2B": 15 };
+  const AISLE_Z = { 1: 0, 2: 7 };
+  const RACK_Z = { "1A": -3, "1B": 3, "2A": 4, "2B": 10 };
   const bayX = (bay) => (bay - 1) * BAY_M + BAY_M / 2;
   const DOCK_X = -3;
   const FAR_X = AISLE_LEN + 2;
+  const TUNNEL_X = TUNNEL_M;
+  const TUNNEL_W = 2.6;
+  const MIDBLOCK = [RACK_Z["1B"], RACK_Z["2A"]];
   function ThreeSim({ assignments, onDone }) {
     const mountRef = useRef(null);
-    const [hud, setHud] = useState({ picked: 0, total: 0, dist: 0, current: "Leaving the dock", aisle: 1 });
+    const [hud, setHud] = useState({ picked: 0, total: 0, dist: 0, current: "Leaving the dock", aisle: 1, route: "\u2014" });
     const [webglFailed, setWebglFailed] = useState(false);
     const doneRef = useRef(false);
     useEffect(() => {
@@ -210,22 +219,42 @@
       };
       [-2.1, 2.1].forEach((dz) => stripe(AISLE_LEN + 4, 0.12, AISLE_LEN / 2, AISLE_Z[1] + dz));
       [-2.1, 2.1].forEach((dz) => stripe(AISLE_LEN + 4, 0.12, AISLE_LEN / 2, AISLE_Z[2] + dz));
-      stripe(0.12, 12, FAR_X + 0.6, 6);
+      stripe(0.12, AISLE_Z[2] - AISLE_Z[1] + 4, FAR_X + 0.6, (AISLE_Z[1] + AISLE_Z[2]) / 2);
       stripe(0.15, 4.2, DOCK_X, 0);
       const steel = new THREE.MeshStandardMaterial({ color: 3752527, roughness: 0.6, metalness: 0.4 });
       const beamMat = new THREE.MeshStandardMaterial({ color: 13199915, roughness: 0.5, metalness: 0.3 });
       Object.values(RACK_Z).forEach((z) => {
+        const isMid = MIDBLOCK.includes(z);
         for (let x = 0; x <= AISLE_LEN; x += BAY_M) {
+          if (isMid && Math.abs(x - TUNNEL_X) < 0.01) continue;
           const up = new THREE.Mesh(new THREE.BoxGeometry(0.14, 3.2, 0.9), steel);
           up.position.set(x, 1.6, z);
           up.castShadow = true;
           scene.add(up);
         }
         [1.7, 3.05].forEach((y) => {
-          const beam = new THREE.Mesh(new THREE.BoxGeometry(AISLE_LEN, 0.12, 0.9), beamMat);
-          beam.position.set(AISLE_LEN / 2, y, z);
-          scene.add(beam);
+          if (isMid) {
+            const gapL = TUNNEL_X - TUNNEL_W / 2, gapR = TUNNEL_X + TUNNEL_W / 2;
+            [[0, gapL], [gapR, AISLE_LEN]].forEach(([x0, x1]) => {
+              const beam = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 0.12, 0.9), beamMat);
+              beam.position.set((x0 + x1) / 2, y, z);
+              scene.add(beam);
+            });
+          } else {
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(AISLE_LEN, 0.12, 0.9), beamMat);
+            beam.position.set(AISLE_LEN / 2, y, z);
+            scene.add(beam);
+          }
         });
+      });
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(TUNNEL_W, 0.16, MIDBLOCK[1] - MIDBLOCK[0] + 0.9), beamMat);
+      lintel.position.set(TUNNEL_X, 3.05, (MIDBLOCK[0] + MIDBLOCK[1]) / 2);
+      lintel.castShadow = true;
+      scene.add(lintel);
+      [-TUNNEL_W / 2, TUNNEL_W / 2].forEach((dx) => {
+        const edge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, MIDBLOCK[1] - MIDBLOCK[0] + 3), paint);
+        edge.position.set(TUNNEL_X + dx, 0.011, (MIDBLOCK[0] + MIDBLOCK[1]) / 2);
+        scene.add(edge);
       });
       const slotMeshes = {};
       Object.entries(assignments).forEach(([sid, pid]) => {
@@ -267,19 +296,39 @@
       scene.add(cart);
       const loc = parseAssignments(assignments);
       const order = sampleOrder(10).filter((pid) => loc[pid]);
-      const inA1 = order.filter((pid) => loc[pid].aisle === 1).sort((a, b) => loc[a].bay - loc[b].bay);
-      const inA2 = order.filter((pid) => loc[pid].aisle === 2).sort((a, b) => loc[b].bay - loc[a].bay);
+      const a1 = order.filter((pid) => loc[pid].aisle === 1).sort((x, y) => loc[x].bay - loc[y].bay);
+      const a2 = order.filter((pid) => loc[pid].aisle === 2);
+      const CROSS_Z = AISLE_Z[2] - AISLE_Z[1];
+      const deepest = (list) => list.length ? Math.max(...list.map((pid) => bayX(loc[pid].bay))) : DOCK_X;
+      const d1 = deepest(a1), d2 = deepest(a2);
+      const farCost = 2 * (FAR_X - DOCK_X) + 2 * CROSS_Z;
+      const t1 = Math.max(d1, TUNNEL_X), t2 = Math.max(d2, TUNNEL_X);
+      const tunnelCost = t1 - DOCK_X + (t1 - TUNNEL_X) + CROSS_Z + (t2 - TUNNEL_X) + (t2 - DOCK_X) + CROSS_Z;
+      const useTunnel = a2.length > 0 && tunnelCost <= farCost;
       const route = [];
-      inA1.forEach((pid) => route.push({ x: bayX(loc[pid].bay), z: AISLE_Z[1], pick: pid, aisle: 1 }));
-      if (inA2.length) {
-        route.push({ x: FAR_X, z: AISLE_Z[1], pick: null, aisle: 1, note: "Crossing to aisle 2" });
-        route.push({ x: FAR_X, z: AISLE_Z[2], pick: null, aisle: 2, note: "Entering aisle 2" });
-        inA2.forEach((pid) => route.push({ x: bayX(loc[pid].bay), z: AISLE_Z[2], pick: pid, aisle: 2 }));
-        route.push({ x: DOCK_X, z: AISLE_Z[2], pick: null, aisle: 2, note: "Heading back to the dock" });
+      const push = (x, z, pick, aisle, note) => route.push({ x, z, pick, aisle, note });
+      const pickWp = (pid, aisle) => push(bayX(loc[pid].bay), AISLE_Z[aisle], pid, aisle);
+      if (!a2.length) {
+        a1.forEach((pid) => pickWp(pid, 1));
+        push(DOCK_X, AISLE_Z[1], null, 1, "Heading back to the dock");
+      } else if (useTunnel) {
+        a1.forEach((pid) => pickWp(pid, 1));
+        push(TUNNEL_X, AISLE_Z[1], null, 1, "Cutting through the tunnel");
+        push(TUNNEL_X, AISLE_Z[2], null, 2, "Into aisle 2");
+        a2.filter((pid) => bayX(loc[pid].bay) > TUNNEL_X).sort((x, y) => loc[x].bay - loc[y].bay).forEach((pid) => pickWp(pid, 2));
+        a2.filter((pid) => bayX(loc[pid].bay) < TUNNEL_X).sort((x, y) => loc[y].bay - loc[x].bay).forEach((pid) => pickWp(pid, 2));
+        push(DOCK_X, AISLE_Z[2], null, 2, "Heading back to the dock");
+        push(DOCK_X, AISLE_Z[1], null, 1, null);
+      } else {
+        a1.forEach((pid) => pickWp(pid, 1));
+        push(FAR_X, AISLE_Z[1], null, 1, "Crossing at the far end");
+        push(FAR_X, AISLE_Z[2], null, 2, "Into aisle 2");
+        a2.sort((x, y) => loc[y].bay - loc[x].bay).forEach((pid) => pickWp(pid, 2));
+        push(DOCK_X, AISLE_Z[2], null, 2, "Heading back to the dock");
+        push(DOCK_X, AISLE_Z[1], null, 1, null);
       }
-      route.push({ x: DOCK_X, z: AISLE_Z[1], pick: null, aisle: 1, note: "Heading back to the dock" });
-      const totalPicks = inA1.length + inA2.length;
-      setHud((h) => ({ ...h, total: totalPicks }));
+      const totalPicks = a1.length + a2.length;
+      setHud((h) => ({ ...h, total: totalPicks, route: useTunnel ? "Tunnel" : a2.length ? "Far end" : "Aisle 1 only" }));
       let wp = 0, mode = "walk", pickT = 0, cartStack = 0, dist = 0, picked = 0;
       const SPEED = 3.4;
       const BED_TOP = 0.41;
@@ -384,7 +433,7 @@
     if (webglFailed) {
       return /* @__PURE__ */ React.createElement("div", { className: "webgl-fail" }, /* @__PURE__ */ React.createElement("div", { className: "webgl-fail-card" }, /* @__PURE__ */ React.createElement("b", null, "3D view unavailable"), /* @__PURE__ */ React.createElement("p", null, "This browser couldn't create a WebGL context (often hardware acceleration being off, or a sandboxed preview). Your slotting is unaffected \u2014 go straight to the score."), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: () => onDone(0) }, "Show my score")));
     }
-    return /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: "100%", height: "100%" } }, /* @__PURE__ */ React.createElement("div", { ref: mountRef, style: { position: "absolute", inset: 0 } }), /* @__PURE__ */ React.createElement("div", { className: "hud" }, /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "ORDER"), " ", hud.picked, "/", hud.total, " lines"), /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "TRAVEL"), " ", Math.round(hud.dist), " m"), /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "AISLE"), " ", hud.aisle), /* @__PURE__ */ React.createElement("div", { className: "hud-current" }, hud.current)), /* @__PURE__ */ React.createElement("button", { className: "btn ghost skip", onClick: () => {
+    return /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: "100%", height: "100%" } }, /* @__PURE__ */ React.createElement("div", { ref: mountRef, style: { position: "absolute", inset: 0 } }), /* @__PURE__ */ React.createElement("div", { className: "hud" }, /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "ORDER"), " ", hud.picked, "/", hud.total, " lines"), /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "TRAVEL"), " ", Math.round(hud.dist), " m"), /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "AISLE"), " ", hud.aisle), /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "ROUTE"), " ", hud.route), /* @__PURE__ */ React.createElement("div", { className: "hud-current" }, hud.current)), /* @__PURE__ */ React.createElement("button", { className: "btn ghost skip", onClick: () => {
       if (!doneRef.current) {
         doneRef.current = true;
         onDone(Math.round(hud.dist));
@@ -444,7 +493,7 @@
     } }, "Clear"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", disabled: !allSlotted, onClick: () => {
       setSimDist(null);
       setPhase("sim");
-    } }, allSlotted ? "Run the picker \u25B8" : `${PRODUCTS.length - slottedIds.size} left to slot`))), showRules && phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "rules" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "The route"), " The picker leaves the dock, walks aisle 1 from bay 1 to bay 5, crosses at the far end, then works aisle 2 back from bay 5 to bay 1. Every face has a fixed walking distance \u2014 shown on each slot."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Travel \xB7 35%"), " Fast movers belong close to the dock so most orders finish early. Anything in aisle 2 is a long walk."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Damage risk \xB7 25%"), " Picks land in the cart in route order. A heavy item slotted later than a crushable one goes on top of it."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Handling effort \xB7 20%"), " Weight \xD7 distance carried. Heavy cases deep in aisle 2 mean a loaded cart hauled the full route."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Species grouping \xB7 20%"), " Neighbours are the bays either side and the face across the aisle. Same-species clusters keep replenishment and store pallets tight.")), phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "body" }, /* @__PURE__ */ React.createElement("aside", { className: "tray" }, /* @__PURE__ */ React.createElement("div", { className: "tray-head" }, /* @__PURE__ */ React.createElement("span", { className: "tray-title" }, "SKU CATEGORIES"), /* @__PURE__ */ React.createElement("span", { className: "tray-count" }, remaining.length, " unslotted")), selProd && /* @__PURE__ */ React.createElement("div", { className: "sel-card", style: { "--sp": SPECIES[selProd.species].color } }, /* @__PURE__ */ React.createElement("div", { className: "sel-name" }, selProd.name), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Weight"), /* @__PURE__ */ React.createElement(StatDots, { label: "Weight", val: selProd.weight })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Crushability"), /* @__PURE__ */ React.createElement(StatDots, { label: "Crush", val: selProd.crush })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Velocity"), /* @__PURE__ */ React.createElement("b", null, selProd.velocity, " picks/day")), /* @__PURE__ */ React.createElement("div", { className: "sel-hint" }, "Tap a pick face to place it")), /* @__PURE__ */ React.createElement("div", { className: "chips" }, PRODUCTS.map((p) => /* @__PURE__ */ React.createElement(
+    } }, allSlotted ? "Run the picker \u25B8" : `${PRODUCTS.length - slottedIds.size} left to slot`))), showRules && phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "rules" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "The route"), " The picker leaves the dock and works aisle 1. A pass-through tunnel cuts the middle rack block between bays 3 and 4 \u2014 the picker takes it whenever it beats walking around the far end. Each face shows its walking distance."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "The tunnel effect"), " Aisle 2 bay 3 sits just 19 m out \u2014 closer than aisle 1 bays 5 and 6. Depth in the aisle matters less than distance from the tunnel mouth."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Travel \xB7 35%"), " Fast movers belong close to the dock so most orders finish early. Anything in aisle 2 is a long walk."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Damage risk \xB7 25%"), " Picks land in the cart in route order. A heavy item slotted later than a crushable one goes on top of it."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Handling effort \xB7 20%"), " Weight \xD7 distance carried. Heavy cases deep in aisle 2 mean a loaded cart hauled the full route."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Species grouping \xB7 20%"), " Neighbours are the bays either side and the face across the aisle. Same-species clusters keep replenishment and store pallets tight.")), phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "body" }, /* @__PURE__ */ React.createElement("aside", { className: "tray" }, /* @__PURE__ */ React.createElement("div", { className: "tray-head" }, /* @__PURE__ */ React.createElement("span", { className: "tray-title" }, "SKU CATEGORIES"), /* @__PURE__ */ React.createElement("span", { className: "tray-count" }, remaining.length, " unslotted")), selProd && /* @__PURE__ */ React.createElement("div", { className: "sel-card", style: { "--sp": SPECIES[selProd.species].color } }, /* @__PURE__ */ React.createElement("div", { className: "sel-name" }, selProd.name), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Weight"), /* @__PURE__ */ React.createElement(StatDots, { label: "Weight", val: selProd.weight })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Crushability"), /* @__PURE__ */ React.createElement(StatDots, { label: "Crush", val: selProd.crush })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Velocity"), /* @__PURE__ */ React.createElement("b", null, selProd.velocity, " picks/day")), /* @__PURE__ */ React.createElement("div", { className: "sel-hint" }, "Tap a pick face to place it")), /* @__PURE__ */ React.createElement("div", { className: "chips" }, PRODUCTS.map((p) => /* @__PURE__ */ React.createElement(
       "button",
       {
         key: p.id,
@@ -455,11 +504,11 @@
       /* @__PURE__ */ React.createElement("span", { className: "chip-bar" }),
       /* @__PURE__ */ React.createElement("span", { className: "chip-name" }, p.name),
       /* @__PURE__ */ React.createElement("span", { className: "chip-stats" }, /* @__PURE__ */ React.createElement("b", null, p.weight, "w"), /* @__PURE__ */ React.createElement("b", null, p.crush, "c"), /* @__PURE__ */ React.createElement("b", null, p.velocity, "/d"))
-    ))), /* @__PURE__ */ React.createElement("div", { className: "legend" }, Object.entries(SPECIES).map(([k, v]) => /* @__PURE__ */ React.createElement("span", { key: k, className: "leg" }, /* @__PURE__ */ React.createElement("i", { style: { background: v.color } }), " ", v.label)))), /* @__PURE__ */ React.createElement("main", { className: "racks" }, AISLES.map((aisle) => /* @__PURE__ */ React.createElement("section", { key: aisle, className: "aisle" }, /* @__PURE__ */ React.createElement("div", { className: "aisle-head" }, /* @__PURE__ */ React.createElement("span", { className: "aisle-tag" }, "AISLE ", aisle), /* @__PURE__ */ React.createElement("span", { className: "aisle-dir" }, aisle === 1 ? "\u25C2 dock end \xB7 picked bay 1 \u2192 5" : "picked bay 5 \u2192 1 \xB7 returns to dock \u25B8")), /* @__PURE__ */ React.createElement("div", { className: "dist-strip" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag ghosted" }), BAYS.map((b) => /* @__PURE__ */ React.createElement("span", { key: b, className: "bay-marker" }, "BAY ", b, " \xB7 ", pathDist({ aisle, bay: b }), " m"))), SIDES.map((side) => /* @__PURE__ */ React.createElement("div", { key: side, className: "rack-row" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag" }, "SIDE ", side), BAYS.map((bay) => {
+    ))), /* @__PURE__ */ React.createElement("div", { className: "legend" }, Object.entries(SPECIES).map(([k, v]) => /* @__PURE__ */ React.createElement("span", { key: k, className: "leg" }, /* @__PURE__ */ React.createElement("i", { style: { background: v.color } }), " ", v.label)))), /* @__PURE__ */ React.createElement("main", { className: "racks" }, AISLES.map((aisle) => /* @__PURE__ */ React.createElement("section", { key: aisle, className: "aisle" }, /* @__PURE__ */ React.createElement("div", { className: "aisle-head" }, /* @__PURE__ */ React.createElement("span", { className: "aisle-tag" }, "AISLE ", aisle), /* @__PURE__ */ React.createElement("span", { className: "aisle-dir" }, aisle === 1 ? "\u25C2 dock end \xB7 worked outbound" : "returns to the dock \u25B8")), /* @__PURE__ */ React.createElement("div", { className: "dist-strip" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag ghosted" }), BAYS.map((b) => /* @__PURE__ */ React.createElement(React.Fragment, { key: b }, /* @__PURE__ */ React.createElement("span", { className: "bay-marker" }, "BAY ", b, " \xB7 ", pathDist({ aisle, bay: b }), " m"), b === TUNNEL_AFTER_BAY && /* @__PURE__ */ React.createElement("span", { className: "tunnel-col head" }, "\u2195")))), SIDES.map((side) => /* @__PURE__ */ React.createElement("div", { key: side, className: "rack-row" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag" }, "SIDE ", side), BAYS.map((bay) => {
       const sid = slotId(aisle, side, bay);
       const pid = assignments[sid];
       const p = pid ? byId[pid] : null;
-      return /* @__PURE__ */ React.createElement(
+      const cell = /* @__PURE__ */ React.createElement(
         "button",
         {
           key: sid,
@@ -470,6 +519,7 @@
         /* @__PURE__ */ React.createElement("span", { className: "slot-code" }, sid, " \xB7 ", pathDist({ aisle, bay }), " m"),
         p ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "slot-name" }, p.name), /* @__PURE__ */ React.createElement("span", { className: "slot-meta" }, p.weight, "w \xB7 ", p.crush, "c \xB7 ", p.velocity, "/d")) : /* @__PURE__ */ React.createElement("span", { className: "slot-empty" }, selected ? "place here" : "empty")
       );
+      return bay === TUNNEL_AFTER_BAY ? /* @__PURE__ */ React.createElement(React.Fragment, { key: sid }, cell, /* @__PURE__ */ React.createElement("span", { className: `tunnel-col ${side === "B" && aisle === 1 ? "open" : side === "A" && aisle === 2 ? "open" : ""}`, title: "Pass-through tunnel" }, "TUNNEL")) : cell;
     }))))), /* @__PURE__ */ React.createElement("p", { className: "foot-note" }, "w weight \xB7 c crushability \xB7 /d picks per day \xB7 m walking distance from the dock. Click a category, then a pick face. Click a filled face to lift it back out."))), phase === "sim" && /* @__PURE__ */ React.createElement("div", { className: "simwrap" }, /* @__PURE__ */ React.createElement(ThreeSim, { assignments, onDone: (d) => {
       setSimDist(d);
       setPhase("results");
@@ -540,7 +590,7 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .aisle-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
 .aisle-tag{font-family:ui-monospace,monospace;font-size:11px;background:var(--accent);color:#15171c;font-weight:800;padding:3px 8px;letter-spacing:1px}
 .aisle-dir{font-size:11px;color:var(--dim);letter-spacing:.5px}
-.dist-strip,.rack-row{display:grid;grid-template-columns:74px repeat(6,1fr);gap:6px;margin-bottom:6px}
+.dist-strip,.rack-row{display:grid;grid-template-columns:74px repeat(3,1fr) 30px repeat(3,1fr);gap:6px;margin-bottom:6px}
 .bay-marker{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--accent);text-align:center;border-top:2px solid var(--accent);padding-top:3px}
 .lvl-tag{font-family:ui-monospace,monospace;font-size:10px;color:var(--dim);display:flex;align-items:center;justify-content:center;
   border:1px dashed var(--line);border-radius:3px;letter-spacing:1px}
@@ -554,6 +604,11 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .slot-name{font-size:12px;font-weight:700;line-height:1.2}
 .slot-meta{font-family:ui-monospace,monospace;font-size:10px;color:var(--dim)}
 .slot-empty{font-size:11px;color:var(--dim);font-style:italic;margin:auto 0}
+.tunnel-col{display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-size:8px;
+  letter-spacing:1px;color:var(--dim);writing-mode:vertical-rl;text-orientation:mixed;border-left:1px dashed var(--line);
+  border-right:1px dashed var(--line);border-radius:2px}
+.tunnel-col.open{color:var(--accent);border-color:var(--accent);background:rgba(242,185,13,.07)}
+.tunnel-col.head{border:none;color:var(--accent);font-size:12px;writing-mode:horizontal-tb}
 .foot-note{font-size:11.5px;color:var(--dim);margin-top:4px}
 .simwrap{flex:1;min-height:520px;height:calc(100vh - 90px)}
 .hud{position:absolute;top:14px;left:14px;background:rgba(21,23,28,.85);border:1px solid var(--line);border-left:4px solid var(--accent);
@@ -586,7 +641,7 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .results-actions{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
 @media (max-width:760px){
   .tray{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--line)}
-  .dist-strip,.rack-row{grid-template-columns:54px repeat(6,1fr)}
+  .dist-strip,.rack-row{grid-template-columns:54px repeat(3,1fr) 22px repeat(3,1fr)}
   .slot-name{font-size:10.5px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
