@@ -42,17 +42,29 @@
     { id: "safood", name: "Small Animal Food", species: "small", weight: 3, crush: 5, velocity: 30 },
     { id: "hay", name: "Hay Bales", species: "small", weight: 4, crush: 5, velocity: 25 },
     { id: "lamps", name: "Reptile Heat Lamps", species: "reptile", weight: 2, crush: 9, velocity: 12 },
-    { id: "substrate", name: "Reptile Substrate", species: "reptile", weight: 4, crush: 4, velocity: 15 }
+    { id: "substrate", name: "Reptile Substrate", species: "reptile", weight: 4, crush: 4, velocity: 15 },
+    { id: "flea", name: "Flea & Tick Treatments", species: "dog", weight: 1, crush: 6, velocity: 55 },
+    { id: "gravel", name: "Aquarium Gravel & D\xE9cor", species: "fish", weight: 7, crush: 3, velocity: 18 },
+    { id: "feeders", name: "Bird Feeders", species: "bird", weight: 3, crush: 6, velocity: 28 },
+    { id: "sacages", name: "Small Animal Cages", species: "small", weight: 5, crush: 8, velocity: 12 }
   ];
   const byId = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
+  const AISLES = [1, 2];
   const SIDES = ["A", "B"];
-  const BAYS = [1, 2, 3, 4, 5];
-  const LEVELS = [1, 2];
-  const slotId = (side, bay, level) => `${side}${bay}-L${level}`;
-  const ALL_SLOTS = [];
-  SIDES.forEach((s) => BAYS.forEach((b) => LEVELS.forEach((l) => ALL_SLOTS.push({ id: slotId(s, b, l), side: s, bay: b, level: l }))));
-  const slotById = Object.fromEntries(ALL_SLOTS.map((s) => [s.id, s]));
+  const BAYS = [1, 2, 3, 4, 5, 6];
   const BAY_M = 4;
+  const CROSS_M = 4;
+  const AISLE_LEN = BAYS.length * BAY_M;
+  const slotId = (aisle, side, bay) => `${aisle}${side}-${String(bay).padStart(2, "0")}`;
+  const ALL_SLOTS = [];
+  AISLES.forEach((a) => SIDES.forEach((s) => BAYS.forEach((b) => ALL_SLOTS.push({ id: slotId(a, s, b), aisle: a, side: s, bay: b }))));
+  const slotById = Object.fromEntries(ALL_SLOTS.map((s) => [s.id, s]));
+  function pathDist(slot) {
+    if (slot.aisle === 1) return slot.bay * BAY_M;
+    return AISLE_LEN + CROSS_M + (BAYS.length + 1 - slot.bay) * BAY_M;
+  }
+  const SLOT_DISTS = ALL_SLOTS.map(pathDist).sort((a, b) => a - b);
+  const clamp = (v) => Math.max(0, Math.min(100, Math.round(v)));
   function parseAssignments(assignments) {
     const loc = {};
     Object.entries(assignments).forEach(([sid, pid]) => {
@@ -60,30 +72,25 @@
     });
     return loc;
   }
-  function scoreTravel(loc) {
-    const actual = PRODUCTS.reduce((s, p) => s + p.velocity * loc[p.id].bay, 0);
-    const sorted = [...PRODUCTS].sort((a, b) => b.velocity - a.velocity);
+  function distanceScore(loc, metricKey) {
+    const actual = PRODUCTS.reduce((s, p) => s + p[metricKey] * pathDist(loc[p.id]), 0);
+    const vals = PRODUCTS.map((p) => p[metricKey]).sort((a, b) => b - a);
     let best = 0, worst = 0;
-    sorted.forEach((p, i) => {
-      best += p.velocity * (Math.floor(i / 4) + 1);
-      worst += p.velocity * (5 - Math.floor(i / 4));
+    vals.forEach((v, i) => {
+      best += v * SLOT_DISTS[i];
+      worst += v * SLOT_DISTS[SLOT_DISTS.length - 1 - i];
     });
-    const score = Math.round(100 * (worst - actual) / (worst - best));
-    const offenders = PRODUCTS.filter((p) => p.velocity >= 70 && loc[p.id].bay >= 4).sort((a, b) => b.velocity - a.velocity).map((p) => `${p.name} (${p.velocity} picks/day) is buried in bay ${loc[p.id].bay}`);
-    return { score: clamp01_100(score), offenders };
+    return { actual, score: clamp(100 * (worst - actual) / (worst - best)) };
   }
-  function scoreErgo(loc) {
-    const heavies = PRODUCTS.filter((p) => p.weight >= 6);
-    const maxPen = heavies.reduce((s, p) => s + (p.weight - 5), 0);
-    let pen = 0;
-    const offenders = [];
-    heavies.forEach((p) => {
-      if (loc[p.id].level === 2) {
-        pen += p.weight - 5;
-        offenders.push(`${p.name} (${p.weight}/10 weight) is on an upper level \u2014 repeated lifts above shoulder height`);
-      }
-    });
-    return { score: clamp01_100(Math.round(100 * (1 - pen / maxPen))), offenders };
+  function scoreTravel(loc) {
+    const { score } = distanceScore(loc, "velocity");
+    const offenders = PRODUCTS.filter((p) => p.velocity >= 70 && loc[p.id].aisle === 2).sort((a, b) => b.velocity - a.velocity).map((p) => `${p.name} (${p.velocity} picks/day) sits in aisle 2 \u2014 ${pathDist(loc[p.id])} m into the tour on most orders`);
+    return { score, offenders };
+  }
+  function scoreHandling(loc) {
+    const { score } = distanceScore(loc, "weight");
+    const offenders = PRODUCTS.filter((p) => p.weight >= 7 && loc[p.id].aisle === 2).sort((a, b) => b.weight - a.weight).map((p) => `${p.name} (${p.weight}/10 weight) is carried ${pathDist(loc[p.id])} m back to the dock every time`);
+    return { score, offenders };
   }
   function scoreDamage(loc) {
     const heavies = PRODUCTS.filter((p) => p.weight >= 6);
@@ -95,17 +102,17 @@
         if (h.id === c.id) return;
         const sev = (h.weight - 5) * (c.crush - 5);
         maxViol += sev;
-        if (loc[h.id].bay > loc[c.id].bay) {
+        const dh = pathDist(loc[h.id]), dc = pathDist(loc[c.id]);
+        if (dh > dc) {
           viol += sev;
-          pairs.push({ sev, txt: `${c.name} gets picked before ${h.name} \u2014 ${h.name} lands on top of it` });
-        } else if (loc[h.id].bay === loc[c.id].bay) {
+          pairs.push({ sev, txt: `${c.name} is picked before ${h.name} \u2014 ${h.name} lands on top of it in the cart` });
+        } else if (dh === dc) {
           viol += sev / 2;
         }
       });
     });
     pairs.sort((a, b) => b.sev - a.sev);
-    const score = maxViol === 0 ? 100 : Math.round(100 * (1 - viol / maxViol));
-    return { score: clamp01_100(score), offenders: pairs.slice(0, 3).map((p) => p.txt) };
+    return { score: maxViol === 0 ? 100 : clamp(100 * (1 - viol / maxViol)), offenders: pairs.slice(0, 3).map((p) => p.txt) };
   }
   function scoreSpecies(loc) {
     let total = 0;
@@ -114,39 +121,33 @@
       const s = loc[p.id];
       const neigh = [];
       [s.bay - 1, s.bay + 1].forEach((b) => {
-        if (b >= 1 && b <= 5) neigh.push(slotId(s.side, b, s.level));
+        if (b >= 1 && b <= BAYS.length) neigh.push(slotId(s.aisle, s.side, b));
       });
-      neigh.push(slotId(s.side, s.bay, s.level === 1 ? 2 : 1));
+      neigh.push(slotId(s.aisle, s.side === "A" ? "B" : "A", s.bay));
       const occupied = neigh.map((nid) => Object.entries(loc).find(([, sl]) => sl.id === nid)).filter(Boolean);
       if (occupied.length === 0) return;
       const same = occupied.filter(([pid]) => byId[pid].species === p.species).length;
-      const frac = same / occupied.length;
-      total += frac;
-      if (same === 0) loners.push(`${p.name} has no ${SPECIES[p.species].label.toLowerCase()} neighbours \u2014 store-friendly pallets break apart`);
+      total += same / occupied.length;
+      if (same === 0) loners.push(`${p.name} has no ${SPECIES[p.species].label.toLowerCase()} neighbours \u2014 replenishment and store pallets both suffer`);
     });
-    const avg = total / PRODUCTS.length;
-    return { score: clamp01_100(Math.round(avg / 0.7 * 100)), offenders: loners.slice(0, 4) };
-  }
-  function clamp01_100(v) {
-    return Math.max(0, Math.min(100, v));
+    return { score: clamp(total / PRODUCTS.length / 0.7 * 100), offenders: loners.slice(0, 4) };
   }
   function computeScores(assignments) {
     const loc = parseAssignments(assignments);
     const travel = scoreTravel(loc);
-    const ergo = scoreErgo(loc);
+    const handling = scoreHandling(loc);
     const damage = scoreDamage(loc);
     const species = scoreSpecies(loc);
-    const total = Math.round(travel.score * 0.35 + damage.score * 0.25 + ergo.score * 0.2 + species.score * 0.2);
+    const total = Math.round(travel.score * 0.35 + damage.score * 0.25 + handling.score * 0.2 + species.score * 0.2);
     const grade = total >= 90 ? "S" : total >= 80 ? "A" : total >= 70 ? "B" : total >= 55 ? "C" : "D";
-    return { travel, ergo, damage, species, total, grade };
+    return { travel, handling, damage, species, total, grade };
   }
   function sampleOrder(n = 8) {
     const pool = [...PRODUCTS];
     const picks = [];
     while (picks.length < n && pool.length) {
       const totalV = pool.reduce((s, p) => s + p.velocity, 0);
-      let r = Math.random() * totalV;
-      let idx = 0;
+      let r = Math.random() * totalV, idx = 0;
       for (let i = 0; i < pool.length; i++) {
         r -= pool[i].velocity;
         if (r <= 0) {
@@ -159,84 +160,83 @@
     }
     return picks;
   }
+  const AISLE_Z = { 1: 0, 2: 12 };
+  const RACK_Z = { "1A": -3, "1B": 3, "2A": 9, "2B": 15 };
+  const bayX = (bay) => (bay - 1) * BAY_M + BAY_M / 2;
+  const DOCK_X = -3;
+  const FAR_X = AISLE_LEN + 2;
   function ThreeSim({ assignments, onDone }) {
     const mountRef = useRef(null);
-    const [hud, setHud] = useState({ picked: 0, total: 0, dist: 0, current: "Heading into the aisle" });
+    const [hud, setHud] = useState({ picked: 0, total: 0, dist: 0, current: "Leaving the dock", aisle: 1 });
     const [webglFailed, setWebglFailed] = useState(false);
     const doneRef = useRef(false);
     useEffect(() => {
       const mount = mountRef.current;
       if (!mount) return;
-      const W = mount.clientWidth || 800;
-      const H = mount.clientHeight || 520;
+      const W = mount.clientWidth || 800, H = mount.clientHeight || 520;
       let renderer;
       try {
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "default" });
       } catch (e) {
-        console.error("WebGL context creation failed:", e);
+        console.error("WebGL unavailable:", e);
         setWebglFailed(true);
         return;
       }
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(1119e3);
-      scene.fog = new THREE.Fog(1119e3, 22, 55);
-      const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
+      scene.fog = new THREE.Fog(1119e3, 28, 70);
+      const camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 140);
       renderer.setSize(W, H);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.shadowMap.enabled = true;
       mount.appendChild(renderer.domElement);
-      scene.add(new THREE.AmbientLight(16777215, 0.55));
-      const sun = new THREE.DirectionalLight(16774102, 0.9);
-      sun.position.set(10, 18, 8);
+      scene.add(new THREE.AmbientLight(16777215, 0.6));
+      const sun = new THREE.DirectionalLight(16774102, 0.85);
+      sun.position.set(6, 22, -6);
       sun.castShadow = true;
-      sun.shadow.mapSize.set(1024, 1024);
-      sun.shadow.camera.left = -20;
-      sun.shadow.camera.right = 30;
-      sun.shadow.camera.top = 20;
-      sun.shadow.camera.bottom = -20;
+      sun.shadow.mapSize.set(2048, 2048);
+      Object.assign(sun.shadow.camera, { left: -30, right: AISLE_LEN + 20, top: 40, bottom: -20 });
+      sun.shadow.camera.updateProjectionMatrix();
       scene.add(sun);
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 40), new THREE.MeshStandardMaterial({ color: 1908774, roughness: 0.95 }));
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 90), new THREE.MeshStandardMaterial({ color: 1908774, roughness: 0.95 }));
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
       scene.add(floor);
-      [-2.1, 2.1].forEach((z) => {
-        const line = new THREE.Mesh(new THREE.BoxGeometry(24, 0.02, 0.12), new THREE.MeshStandardMaterial({ color: 15907085 }));
-        line.position.set(10, 0.011, z);
-        scene.add(line);
-      });
-      const dock = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.02, 4.2), new THREE.MeshStandardMaterial({ color: 15907085 }));
-      dock.position.set(-2, 0.011, 0);
-      scene.add(dock);
+      const paint = new THREE.MeshStandardMaterial({ color: 15907085 });
+      const stripe = (w, d, x, z) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, d), paint);
+        m.position.set(x, 0.011, z);
+        scene.add(m);
+      };
+      [-2.1, 2.1].forEach((dz) => stripe(AISLE_LEN + 4, 0.12, AISLE_LEN / 2, AISLE_Z[1] + dz));
+      [-2.1, 2.1].forEach((dz) => stripe(AISLE_LEN + 4, 0.12, AISLE_LEN / 2, AISLE_Z[2] + dz));
+      stripe(0.12, 12, FAR_X + 0.6, 6);
+      stripe(0.15, 4.2, DOCK_X, 0);
       const steel = new THREE.MeshStandardMaterial({ color: 3752527, roughness: 0.6, metalness: 0.4 });
       const beamMat = new THREE.MeshStandardMaterial({ color: 13199915, roughness: 0.5, metalness: 0.3 });
-      [-3, 3].forEach((z) => {
-        for (let x = 0; x <= 20; x += BAY_M) {
-          const up = new THREE.Mesh(new THREE.BoxGeometry(0.14, 4.2, 0.9), steel);
-          up.position.set(x, 2.1, z);
+      Object.values(RACK_Z).forEach((z) => {
+        for (let x = 0; x <= AISLE_LEN; x += BAY_M) {
+          const up = new THREE.Mesh(new THREE.BoxGeometry(0.14, 3.2, 0.9), steel);
+          up.position.set(x, 1.6, z);
           up.castShadow = true;
           scene.add(up);
         }
-        [1.9, 4].forEach((y) => {
-          const beam = new THREE.Mesh(new THREE.BoxGeometry(20, 0.12, 0.9), beamMat);
-          beam.position.set(10, y, z);
+        [1.7, 3.05].forEach((y) => {
+          const beam = new THREE.Mesh(new THREE.BoxGeometry(AISLE_LEN, 0.12, 0.9), beamMat);
+          beam.position.set(AISLE_LEN / 2, y, z);
           scene.add(beam);
         });
-        const shelf = new THREE.Mesh(new THREE.BoxGeometry(20, 0.06, 0.95), steel);
-        shelf.position.set(10, 2, z);
-        scene.add(shelf);
       });
-      const bayX = (bay) => (bay - 1) * BAY_M + BAY_M / 2;
       const slotMeshes = {};
       Object.entries(assignments).forEach(([sid, pid]) => {
         if (!pid) return;
-        const s = slotById[sid];
-        const p = byId[pid];
-        const col = new THREE.Color(SPECIES[p.species].color);
-        const size = 0.7 + p.weight * 0.06;
-        const geo = new THREE.BoxGeometry(size * 1.3, size, 0.85);
-        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.7 }));
-        const y = s.level === 1 ? size / 2 : 2.06 + size / 2;
-        mesh.position.set(bayX(s.bay) + (s.level === 1 ? -0.6 : 0.6) * 0.4, y, s.side === "A" ? -3 : 3);
+        const s = slotById[sid], p = byId[pid];
+        const size = 0.75 + p.weight * 0.07;
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(size * 1.25, size, 0.85),
+          new THREE.MeshStandardMaterial({ color: new THREE.Color(SPECIES[p.species].color), roughness: 0.7 })
+        );
+        mesh.position.set(bayX(s.bay), size / 2, RACK_Z[`${s.aisle}${s.side}`]);
         mesh.castShadow = true;
         scene.add(mesh);
         slotMeshes[pid] = mesh;
@@ -251,81 +251,88 @@
       const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 12), new THREE.MeshStandardMaterial({ color: 2845872 }));
       cap.position.y = 1.88;
       picker.add(body, head, cap);
-      picker.position.set(-2, 0, 0);
+      picker.position.set(DOCK_X, 0, 0);
       scene.add(picker);
       const cart = new THREE.Group();
-      const bed = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 0.8), steel);
+      const bed = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 0.9), steel);
       bed.position.y = 0.35;
-      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.9, 0.06), steel);
-      handle.position.set(0.62, 0.8, 0);
-      cart.add(bed, handle);
-      [-0.5, 0.5].forEach((x) => [-0.3, 0.3].forEach((z) => {
+      cart.add(bed);
+      [-0.5, 0.5].forEach((x) => [-0.34, 0.34].forEach((z) => {
         const w = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 10), new THREE.MeshStandardMaterial({ color: 1316378 }));
         w.rotation.x = Math.PI / 2;
         w.position.set(x, 0.12, z);
         cart.add(w);
       }));
-      cart.position.set(-3.4, 0, 0);
+      cart.position.set(DOCK_X - 1.5, 0, 0);
       scene.add(cart);
-      const orderIds = sampleOrder(8).filter((pid) => Object.values(assignments).includes(pid));
       const loc = parseAssignments(assignments);
-      const plan = orderIds.map((pid) => ({ pid, slot: loc[pid] })).sort((a, b) => a.slot.bay - b.slot.bay || a.slot.side.localeCompare(b.slot.side) || a.slot.level - b.slot.level);
-      setHud((h) => ({ ...h, total: plan.length }));
-      let mode = "walk";
-      let planIdx = 0;
-      let pickT = 0;
-      let cartStack = 0;
+      const order = sampleOrder(10).filter((pid) => loc[pid]);
+      const inA1 = order.filter((pid) => loc[pid].aisle === 1).sort((a, b) => loc[a].bay - loc[b].bay);
+      const inA2 = order.filter((pid) => loc[pid].aisle === 2).sort((a, b) => loc[b].bay - loc[a].bay);
+      const route = [];
+      inA1.forEach((pid) => route.push({ x: bayX(loc[pid].bay), z: AISLE_Z[1], pick: pid, aisle: 1 }));
+      if (inA2.length) {
+        route.push({ x: FAR_X, z: AISLE_Z[1], pick: null, aisle: 1, note: "Crossing to aisle 2" });
+        route.push({ x: FAR_X, z: AISLE_Z[2], pick: null, aisle: 2, note: "Entering aisle 2" });
+        inA2.forEach((pid) => route.push({ x: bayX(loc[pid].bay), z: AISLE_Z[2], pick: pid, aisle: 2 }));
+        route.push({ x: DOCK_X, z: AISLE_Z[2], pick: null, aisle: 2, note: "Heading back to the dock" });
+      }
+      route.push({ x: DOCK_X, z: AISLE_Z[1], pick: null, aisle: 1, note: "Heading back to the dock" });
+      const totalPicks = inA1.length + inA2.length;
+      setHud((h) => ({ ...h, total: totalPicks }));
+      let wp = 0, mode = "walk", pickT = 0, cartStack = 0, dist = 0, picked = 0;
+      const SPEED = 3.4;
       const BED_TOP = 0.41;
       const COL_X = [-0.36, 0, 0.36];
       const colTop = [BED_TOP, BED_TOP, BED_TOP];
       const boxH = (m) => (m.geometry.parameters.height || 0.8) * m.scale.y;
-      let dist = 0;
-      let lastX = picker.position.x;
-      const SPEED = 3.2;
+      const heading = new THREE.Vector3(1, 0, 0);
       const clock = new THREE.Clock();
       let raf;
-      const targetXFor = () => planIdx < plan.length ? bayX(plan[planIdx].slot.bay) : -2;
       function animate() {
         raf = requestAnimationFrame(animate);
         const dt = Math.min(clock.getDelta(), 0.05);
-        if (mode === "walk" || mode === "return") {
-          const tx = mode === "walk" ? targetXFor() : -2.6;
-          const dx = tx - picker.position.x;
+        const target = route[Math.min(wp, route.length - 1)];
+        if (mode === "walk") {
+          const dx = target.x - picker.position.x;
+          const dz = target.z - picker.position.z;
+          const d = Math.hypot(dx, dz);
           const step = SPEED * dt;
-          if (Math.abs(dx) <= step + 1e-6) {
-            picker.position.x = tx;
-            picker.position.y = 0;
-            if (mode === "walk") {
-              if (planIdx < plan.length) {
-                mode = "pick";
-                pickT = 0;
-                setHud((h) => ({ ...h, current: `Picking ${byId[plan[planIdx].pid].name} \u2014 ${plan[planIdx].slot.id}` }));
-              } else {
-                mode = "return";
-                setHud((h) => ({ ...h, current: "Heading back to the dock" }));
+          if (d <= step + 1e-6) {
+            picker.position.set(target.x, 0, target.z);
+            if (target.pick) {
+              mode = "pick";
+              pickT = 0;
+              setHud((h) => ({ ...h, aisle: target.aisle, current: `Picking ${byId[target.pick].name} \u2014 ${loc[target.pick].id}` }));
+            } else {
+              if (target.note) setHud((h) => ({ ...h, aisle: target.aisle, current: target.note }));
+              wp++;
+              if (wp >= route.length && !doneRef.current) {
+                doneRef.current = true;
+                setTimeout(() => onDone(Math.round(dist)), 500);
               }
-            } else if (mode === "return" && !doneRef.current) {
-              doneRef.current = true;
-              setTimeout(() => onDone(Math.round(dist)), 500);
             }
           } else {
-            picker.position.x += Math.sign(dx) * step;
+            const ux = dx / d, uz = dz / d;
+            picker.position.x += ux * step;
+            picker.position.z += uz * step;
             picker.position.y = Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.05;
+            dist += step;
+            heading.lerp(new THREE.Vector3(ux, 0, uz), 0.12).normalize();
           }
         } else if (mode === "pick") {
           pickT += dt;
-          const item = plan[planIdx];
-          const mesh = slotMeshes[item.pid];
+          const mesh = slotMeshes[target.pick];
           if (mesh) {
             const t = Math.min(pickT / 0.8, 1);
             const ease = t * t * (3 - 2 * t);
             const from = mesh.userData.from || (mesh.userData.from = mesh.position.clone());
             const col = cartStack % 3;
-            const h = boxH(mesh) * (1 - 0.45);
+            const h = boxH(mesh) * 0.55;
             const to = new THREE.Vector3(
-              cart.position.x + COL_X[col],
+              cart.position.x + heading.x * COL_X[col],
               colTop[col] + h / 2,
-              cart.position.z
+              cart.position.z + heading.z * COL_X[col]
             );
             mesh.position.lerpVectors(from, to, ease);
             mesh.scale.setScalar(1 - 0.45 * ease);
@@ -340,18 +347,23 @@
               colTop[col] += h + 0.015;
             }
             cartStack++;
-            planIdx++;
-            setHud((h) => ({ ...h, picked: planIdx, current: planIdx < plan.length ? "Walking to next slot" : "Order complete" }));
+            picked++;
+            wp++;
+            setHud((h) => ({ ...h, picked, current: picked < totalPicks ? "Walking to next face" : "Order complete" }));
             mode = "walk";
           }
         }
-        dist += Math.abs(picker.position.x - lastX);
-        lastX = picker.position.x;
         setHud((h) => Math.abs(h.dist - dist) > 0.5 ? { ...h, dist } : h);
-        cart.position.x += (picker.position.x - 1.4 - cart.position.x) * Math.min(dt * 4, 1);
-        const cx = picker.position.x;
-        camera.position.lerp(new THREE.Vector3(cx - 6.5, 4.6, 2), 0.06);
-        camera.lookAt(cx + 4, 1.1, 0);
+        const cartTarget = new THREE.Vector3(picker.position.x - heading.x * 1.6, 0, picker.position.z - heading.z * 1.6);
+        cart.position.lerp(cartTarget, Math.min(dt * 4.5, 1));
+        cart.rotation.y = Math.atan2(heading.x, heading.z) - Math.PI / 2;
+        const camPos = new THREE.Vector3(
+          picker.position.x - heading.x * 7.5 - heading.z * 1.5,
+          5,
+          picker.position.z - heading.z * 7.5 + heading.x * 1.5
+        );
+        camera.position.lerp(camPos, 0.05);
+        camera.lookAt(picker.position.x + heading.x * 5, 1.1, picker.position.z + heading.z * 5);
         renderer.render(scene, camera);
       }
       animate();
@@ -370,21 +382,17 @@
       };
     }, []);
     if (webglFailed) {
-      return /* @__PURE__ */ React.createElement("div", { className: "webgl-fail" }, /* @__PURE__ */ React.createElement("div", { className: "webgl-fail-card" }, /* @__PURE__ */ React.createElement("b", null, "3D view unavailable"), /* @__PURE__ */ React.createElement("p", null, "This browser or device couldn't create a WebGL context (common when hardware acceleration is off, or inside some embedded/mobile previews). Your slotting is unaffected \u2014 you can go straight to the score."), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: () => onDone(0) }, "Show my score")));
+      return /* @__PURE__ */ React.createElement("div", { className: "webgl-fail" }, /* @__PURE__ */ React.createElement("div", { className: "webgl-fail-card" }, /* @__PURE__ */ React.createElement("b", null, "3D view unavailable"), /* @__PURE__ */ React.createElement("p", null, "This browser couldn't create a WebGL context (often hardware acceleration being off, or a sandboxed preview). Your slotting is unaffected \u2014 go straight to the score."), /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: () => onDone(0) }, "Show my score")));
     }
-    return /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: "100%", height: "100%" } }, /* @__PURE__ */ React.createElement("div", { ref: mountRef, style: { position: "absolute", inset: 0 } }), /* @__PURE__ */ React.createElement("div", { className: "hud" }, /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "ORDER"), " ", hud.picked, "/", hud.total, " lines"), /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "TRAVEL"), " ", Math.round(hud.dist), " m"), /* @__PURE__ */ React.createElement("div", { className: "hud-current" }, hud.current)), /* @__PURE__ */ React.createElement("button", { className: "btn ghost skip", onClick: () => {
+    return /* @__PURE__ */ React.createElement("div", { style: { position: "relative", width: "100%", height: "100%" } }, /* @__PURE__ */ React.createElement("div", { ref: mountRef, style: { position: "absolute", inset: 0 } }), /* @__PURE__ */ React.createElement("div", { className: "hud" }, /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "ORDER"), " ", hud.picked, "/", hud.total, " lines"), /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "TRAVEL"), " ", Math.round(hud.dist), " m"), /* @__PURE__ */ React.createElement("div", { className: "hud-line" }, /* @__PURE__ */ React.createElement("span", { className: "hud-label" }, "AISLE"), " ", hud.aisle), /* @__PURE__ */ React.createElement("div", { className: "hud-current" }, hud.current)), /* @__PURE__ */ React.createElement("button", { className: "btn ghost skip", onClick: () => {
       if (!doneRef.current) {
         doneRef.current = true;
         onDone(Math.round(hud.dist));
       }
     } }, "Skip to score"));
   }
-  function ProductChip({ p, selected, onClick, slotted }) {
-    const c = SPECIES[p.species].color;
-    return /* @__PURE__ */ React.createElement("button", { className: `chip ${selected ? "sel" : ""} ${slotted ? "slotted" : ""}`, onClick, style: { "--sp": c } }, /* @__PURE__ */ React.createElement("span", { className: "chip-bar" }), /* @__PURE__ */ React.createElement("span", { className: "chip-name" }, p.name), /* @__PURE__ */ React.createElement("span", { className: "chip-stats" }, /* @__PURE__ */ React.createElement("b", { title: "Weight" }, p.weight, "w"), /* @__PURE__ */ React.createElement("b", { title: "Crushability" }, p.crush, "c"), /* @__PURE__ */ React.createElement("b", { title: "Velocity (picks/day)" }, p.velocity, "/d")));
-  }
-  function StatDots({ label, val, max = 10 }) {
-    return /* @__PURE__ */ React.createElement("div", { className: "dots", title: `${label}: ${val}/${max}` }, Array.from({ length: 5 }).map((_, i) => /* @__PURE__ */ React.createElement("span", { key: i, className: `dot ${val > i * 2 ? "on" : ""}` })));
+  function StatDots({ label, val }) {
+    return /* @__PURE__ */ React.createElement("div", { className: "dots", title: `${label}: ${val}/10` }, Array.from({ length: 5 }).map((_, i) => /* @__PURE__ */ React.createElement("span", { key: i, className: `dot ${val > i * 2 ? "on" : ""}` })));
   }
   function App() {
     const [assignments, setAssignments] = useState({});
@@ -400,12 +408,12 @@
       const occupant = assignments[sid];
       if (selected) {
         setAssignments((a) => {
-          const next = { ...a };
-          Object.keys(next).forEach((k) => {
-            if (next[k] === selected) delete next[k];
+          const n = { ...a };
+          Object.keys(n).forEach((k) => {
+            if (n[k] === selected) delete n[k];
           });
-          next[sid] = selected;
-          return next;
+          n[sid] = selected;
+          return n;
         });
         setSelected(occupant && occupant !== selected ? occupant : null);
       } else if (occupant) {
@@ -430,23 +438,25 @@
       setSelected(null);
     }
     const selProd = selected ? byId[selected] : null;
-    return /* @__PURE__ */ React.createElement("div", { className: "app" }, /* @__PURE__ */ React.createElement("style", null, CSS), /* @__PURE__ */ React.createElement("header", { className: "hdr" }, /* @__PURE__ */ React.createElement("div", { className: "hdr-left" }, /* @__PURE__ */ React.createElement("div", { className: "logo-mark" }, "SL\xB720"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", null, "SLOT THE AISLE"), /* @__PURE__ */ React.createElement("p", { className: "sub" }, "Pet retail DC \u2014 20 categories, 20 pick faces, one shot at a clean wave"))), phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "hdr-actions" }, /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: () => setShowRules((v) => !v) }, showRules ? "Hide" : "How scoring works"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: quickFill, disabled: remaining.length === 0 }, "Quick-fill rest"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: () => {
+    return /* @__PURE__ */ React.createElement("div", { className: "app" }, /* @__PURE__ */ React.createElement("style", null, CSS), /* @__PURE__ */ React.createElement("header", { className: "hdr" }, /* @__PURE__ */ React.createElement("div", { className: "hdr-left" }, /* @__PURE__ */ React.createElement("div", { className: "logo-mark" }, "SL\xB720"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", null, "SLOT THE AISLE"), /* @__PURE__ */ React.createElement("p", { className: "sub" }, "Pet retail DC \u2014 20 categories, 2 aisles, 20 pick faces, one shot at a clean wave"))), phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "hdr-actions" }, /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: () => setShowRules((v) => !v) }, showRules ? "Hide" : "How scoring works"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: quickFill, disabled: !remaining.length }, "Quick-fill rest"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: () => {
       setAssignments({});
       setSelected(null);
     } }, "Clear"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", disabled: !allSlotted, onClick: () => {
       setSimDist(null);
       setPhase("sim");
-    } }, allSlotted ? "Run the picker \u25B8" : `${PRODUCTS.length - slottedIds.size} left to slot`))), showRules && phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "rules" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Travel \xB7 35%"), " The picker enters at the dock end and walks the aisle. Fast movers (high picks/day) belong in bays 1\u20132 so most orders turn around early."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Damage risk \xB7 25%"), " The pick path runs bay 1 \u2192 5, straight into the tote. Anything heavy slotted deeper than something crushable lands on top of it."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Ergonomics \xB7 20%"), " Heavy items (6+) on upper levels mean repeated lifts above shoulder height. Keep the weight on the floor."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Species grouping \xB7 20%"), " Same-species neighbours build store-friendly pallets and keep replenishment tight. Loners cost you.")), phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "body" }, /* @__PURE__ */ React.createElement("aside", { className: "tray" }, /* @__PURE__ */ React.createElement("div", { className: "tray-head" }, /* @__PURE__ */ React.createElement("span", { className: "tray-title" }, "SKU CATEGORIES"), /* @__PURE__ */ React.createElement("span", { className: "tray-count" }, remaining.length, " unslotted")), selProd && /* @__PURE__ */ React.createElement("div", { className: "sel-card", style: { "--sp": SPECIES[selProd.species].color } }, /* @__PURE__ */ React.createElement("div", { className: "sel-name" }, selProd.name), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Weight"), /* @__PURE__ */ React.createElement(StatDots, { label: "Weight", val: selProd.weight })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Crushability"), /* @__PURE__ */ React.createElement(StatDots, { label: "Crush", val: selProd.crush })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Velocity"), /* @__PURE__ */ React.createElement("b", null, selProd.velocity, " picks/day")), /* @__PURE__ */ React.createElement("div", { className: "sel-hint" }, "Tap a slot to place it")), /* @__PURE__ */ React.createElement("div", { className: "chips" }, PRODUCTS.map((p) => /* @__PURE__ */ React.createElement(
-      ProductChip,
+    } }, allSlotted ? "Run the picker \u25B8" : `${PRODUCTS.length - slottedIds.size} left to slot`))), showRules && phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "rules" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "The route"), " The picker leaves the dock, walks aisle 1 from bay 1 to bay 5, crosses at the far end, then works aisle 2 back from bay 5 to bay 1. Every face has a fixed walking distance \u2014 shown on each slot."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Travel \xB7 35%"), " Fast movers belong close to the dock so most orders finish early. Anything in aisle 2 is a long walk."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Damage risk \xB7 25%"), " Picks land in the cart in route order. A heavy item slotted later than a crushable one goes on top of it."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Handling effort \xB7 20%"), " Weight \xD7 distance carried. Heavy cases deep in aisle 2 mean a loaded cart hauled the full route."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Species grouping \xB7 20%"), " Neighbours are the bays either side and the face across the aisle. Same-species clusters keep replenishment and store pallets tight.")), phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "body" }, /* @__PURE__ */ React.createElement("aside", { className: "tray" }, /* @__PURE__ */ React.createElement("div", { className: "tray-head" }, /* @__PURE__ */ React.createElement("span", { className: "tray-title" }, "SKU CATEGORIES"), /* @__PURE__ */ React.createElement("span", { className: "tray-count" }, remaining.length, " unslotted")), selProd && /* @__PURE__ */ React.createElement("div", { className: "sel-card", style: { "--sp": SPECIES[selProd.species].color } }, /* @__PURE__ */ React.createElement("div", { className: "sel-name" }, selProd.name), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Weight"), /* @__PURE__ */ React.createElement(StatDots, { label: "Weight", val: selProd.weight })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Crushability"), /* @__PURE__ */ React.createElement(StatDots, { label: "Crush", val: selProd.crush })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Velocity"), /* @__PURE__ */ React.createElement("b", null, selProd.velocity, " picks/day")), /* @__PURE__ */ React.createElement("div", { className: "sel-hint" }, "Tap a pick face to place it")), /* @__PURE__ */ React.createElement("div", { className: "chips" }, PRODUCTS.map((p) => /* @__PURE__ */ React.createElement(
+      "button",
       {
         key: p.id,
-        p,
-        slotted: slottedIds.has(p.id),
-        selected: selected === p.id,
+        className: `chip ${selected === p.id ? "sel" : ""} ${slottedIds.has(p.id) ? "slotted" : ""}`,
+        style: { "--sp": SPECIES[p.species].color },
         onClick: () => setSelected(selected === p.id ? null : p.id)
-      }
-    ))), /* @__PURE__ */ React.createElement("div", { className: "legend" }, Object.entries(SPECIES).map(([k, v]) => /* @__PURE__ */ React.createElement("span", { key: k, className: "leg" }, /* @__PURE__ */ React.createElement("i", { style: { background: v.color } }), " ", v.label)))), /* @__PURE__ */ React.createElement("main", { className: "racks" }, /* @__PURE__ */ React.createElement("div", { className: "aisle-strip" }, /* @__PURE__ */ React.createElement("span", { className: "dock-tag" }, "DOCK \u25B8"), BAYS.map((b) => /* @__PURE__ */ React.createElement("span", { key: b, className: "bay-marker", style: { opacity: 1 - (b - 1) * 0.17 } }, "BAY ", b, " \xB7 ", b * BAY_M, " m"))), SIDES.map((side) => /* @__PURE__ */ React.createElement("section", { key: side, className: "rack" }, /* @__PURE__ */ React.createElement("div", { className: "rack-label" }, "SIDE ", side), [2, 1].map((level) => /* @__PURE__ */ React.createElement("div", { key: level, className: "rack-row" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag" }, level === 1 ? "FLOOR" : "UPPER"), BAYS.map((bay) => {
-      const sid = slotId(side, bay, level);
+      },
+      /* @__PURE__ */ React.createElement("span", { className: "chip-bar" }),
+      /* @__PURE__ */ React.createElement("span", { className: "chip-name" }, p.name),
+      /* @__PURE__ */ React.createElement("span", { className: "chip-stats" }, /* @__PURE__ */ React.createElement("b", null, p.weight, "w"), /* @__PURE__ */ React.createElement("b", null, p.crush, "c"), /* @__PURE__ */ React.createElement("b", null, p.velocity, "/d"))
+    ))), /* @__PURE__ */ React.createElement("div", { className: "legend" }, Object.entries(SPECIES).map(([k, v]) => /* @__PURE__ */ React.createElement("span", { key: k, className: "leg" }, /* @__PURE__ */ React.createElement("i", { style: { background: v.color } }), " ", v.label)))), /* @__PURE__ */ React.createElement("main", { className: "racks" }, AISLES.map((aisle) => /* @__PURE__ */ React.createElement("section", { key: aisle, className: "aisle" }, /* @__PURE__ */ React.createElement("div", { className: "aisle-head" }, /* @__PURE__ */ React.createElement("span", { className: "aisle-tag" }, "AISLE ", aisle), /* @__PURE__ */ React.createElement("span", { className: "aisle-dir" }, aisle === 1 ? "\u25C2 dock end \xB7 picked bay 1 \u2192 5" : "picked bay 5 \u2192 1 \xB7 returns to dock \u25B8")), /* @__PURE__ */ React.createElement("div", { className: "dist-strip" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag ghosted" }), BAYS.map((b) => /* @__PURE__ */ React.createElement("span", { key: b, className: "bay-marker" }, "BAY ", b, " \xB7 ", pathDist({ aisle, bay: b }), " m"))), SIDES.map((side) => /* @__PURE__ */ React.createElement("div", { key: side, className: "rack-row" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag" }, "SIDE ", side), BAYS.map((bay) => {
+      const sid = slotId(aisle, side, bay);
       const pid = assignments[sid];
       const p = pid ? byId[pid] : null;
       return /* @__PURE__ */ React.createElement(
@@ -457,18 +467,18 @@
           style: p ? { "--sp": SPECIES[p.species].color } : {},
           onClick: () => clickSlot(sid)
         },
-        /* @__PURE__ */ React.createElement("span", { className: "slot-code" }, sid),
+        /* @__PURE__ */ React.createElement("span", { className: "slot-code" }, sid, " \xB7 ", pathDist({ aisle, bay }), " m"),
         p ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "slot-name" }, p.name), /* @__PURE__ */ React.createElement("span", { className: "slot-meta" }, p.weight, "w \xB7 ", p.crush, "c \xB7 ", p.velocity, "/d")) : /* @__PURE__ */ React.createElement("span", { className: "slot-empty" }, selected ? "place here" : "empty")
       );
-    }))))), /* @__PURE__ */ React.createElement("p", { className: "foot-note" }, "w weight \xB7 c crushability \xB7 /d picks per day. Click a category, then a slot. Click a filled slot to lift it back out."))), phase === "sim" && /* @__PURE__ */ React.createElement("div", { className: "simwrap" }, /* @__PURE__ */ React.createElement(ThreeSim, { assignments, onDone: (d) => {
+    }))))), /* @__PURE__ */ React.createElement("p", { className: "foot-note" }, "w weight \xB7 c crushability \xB7 /d picks per day \xB7 m walking distance from the dock. Click a category, then a pick face. Click a filled face to lift it back out."))), phase === "sim" && /* @__PURE__ */ React.createElement("div", { className: "simwrap" }, /* @__PURE__ */ React.createElement(ThreeSim, { assignments, onDone: (d) => {
       setSimDist(d);
       setPhase("results");
-    } })), phase === "results" && scores && /* @__PURE__ */ React.createElement("div", { className: "results" }, /* @__PURE__ */ React.createElement("div", { className: "score-hero" }, /* @__PURE__ */ React.createElement("div", { className: "grade", "data-g": scores.grade }, scores.grade), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "total" }, scores.total, /* @__PURE__ */ React.createElement("span", null, "/100")), /* @__PURE__ */ React.createElement("div", { className: "total-sub" }, simDist != null ? `Sample order travel: ${simDist} m round trip` : ""))), /* @__PURE__ */ React.createElement("div", { className: "bars" }, [
+    } })), phase === "results" && scores && /* @__PURE__ */ React.createElement("div", { className: "results" }, /* @__PURE__ */ React.createElement("div", { className: "score-hero" }, /* @__PURE__ */ React.createElement("div", { className: "grade", "data-g": scores.grade }, scores.grade), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "total" }, scores.total, /* @__PURE__ */ React.createElement("span", null, "/100")), /* @__PURE__ */ React.createElement("div", { className: "total-sub" }, simDist != null && simDist > 0 ? `Sample order: ${simDist} m walked` : ""))), /* @__PURE__ */ React.createElement("div", { className: "bars" }, [
       ["Travel distance", scores.travel, "35%"],
       ["Damage risk", scores.damage, "25%"],
-      ["Ergonomics", scores.ergo, "20%"],
+      ["Handling effort", scores.handling, "20%"],
       ["Species grouping", scores.species, "20%"]
-    ].map(([label, s, w]) => /* @__PURE__ */ React.createElement("div", { key: label, className: "bar-block" }, /* @__PURE__ */ React.createElement("div", { className: "bar-head" }, /* @__PURE__ */ React.createElement("span", null, label, " ", /* @__PURE__ */ React.createElement("em", null, w)), /* @__PURE__ */ React.createElement("b", null, s.score)), /* @__PURE__ */ React.createElement("div", { className: "bar" }, /* @__PURE__ */ React.createElement("i", { style: { width: `${s.score}%` } })), s.offenders.length > 0 && /* @__PURE__ */ React.createElement("ul", { className: "offenders" }, s.offenders.slice(0, 3).map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, o))), s.offenders.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "clean" }, "Clean \u2014 no findings")))), /* @__PURE__ */ React.createElement("div", { className: "results-actions" }, /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: () => setPhase("slot") }, "Re-slot the aisle"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: () => {
+    ].map(([label, s, w]) => /* @__PURE__ */ React.createElement("div", { key: label, className: "bar-block" }, /* @__PURE__ */ React.createElement("div", { className: "bar-head" }, /* @__PURE__ */ React.createElement("span", null, label, " ", /* @__PURE__ */ React.createElement("em", null, w)), /* @__PURE__ */ React.createElement("b", null, s.score)), /* @__PURE__ */ React.createElement("div", { className: "bar" }, /* @__PURE__ */ React.createElement("i", { style: { width: `${s.score}%` } })), s.offenders.length ? /* @__PURE__ */ React.createElement("ul", { className: "offenders" }, s.offenders.slice(0, 3).map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, o))) : /* @__PURE__ */ React.createElement("div", { className: "clean" }, "Clean \u2014 no findings")))), /* @__PURE__ */ React.createElement("div", { className: "results-actions" }, /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: () => setPhase("slot") }, "Re-slot the aisles"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: () => {
       setSimDist(null);
       setPhase("sim");
     } }, "Run another order"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: () => {
@@ -478,44 +488,36 @@
     } }, "Start over"))));
   }
   const CSS = `
-:root{
-  --bg:#15171c; --panel:#1e222a; --panel2:#242933; --line:#343c49;
-  --accent:#f2b90d; --text:#eceada; --dim:#98a1b0;
-}
+:root{--bg:#15171c;--panel:#1e222a;--panel2:#242933;--line:#343c49;--accent:#f2b90d;--text:#eceada;--dim:#98a1b0}
 *{box-sizing:border-box}
-.app{min-height:100vh;background:
-  repeating-linear-gradient(90deg, transparent 0 119px, rgba(255,255,255,.015) 119px 120px),
-  var(--bg);
-  color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  display:flex;flex-direction:column}
-.hdr{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
-  padding:18px 22px;border-bottom:2px solid var(--accent)}
+.app{min-height:100vh;background:repeating-linear-gradient(90deg,transparent 0 119px,rgba(255,255,255,.015) 119px 120px),var(--bg);
+  color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+.hdr{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 22px;border-bottom:2px solid var(--accent)}
 .hdr-left{display:flex;align-items:center;gap:14px}
-.logo-mark{font-family:ui-monospace,Menlo,monospace;background:var(--accent);color:#15171c;
-  font-weight:800;padding:8px 10px;font-size:14px;letter-spacing:1px;
-  clip-path:polygon(0 0,100% 0,100% 70%,85% 100%,0 100%)}
+.logo-mark{font-family:ui-monospace,Menlo,monospace;background:var(--accent);color:#15171c;font-weight:800;padding:8px 10px;font-size:14px;
+  letter-spacing:1px;clip-path:polygon(0 0,100% 0,100% 70%,85% 100%,0 100%)}
 h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .sub{margin:2px 0 0;font-size:12px;color:var(--dim)}
 .hdr-actions{display:flex;gap:8px;flex-wrap:wrap}
-.btn{font:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:3px;cursor:pointer;
-  border:1px solid var(--line);background:var(--panel);color:var(--text);letter-spacing:.3px}
+.btn{font:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:3px;cursor:pointer;border:1px solid var(--line);
+  background:var(--panel);color:var(--text);letter-spacing:.3px}
 .btn:hover{border-color:var(--accent)}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btn.primary{background:var(--accent);color:#15171c;border-color:var(--accent);font-weight:800}
 .btn.primary:disabled{background:var(--panel2);color:var(--dim);border-color:var(--line);cursor:not-allowed}
 .btn.ghost{background:transparent}
-.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;
-  padding:14px 22px;background:var(--panel);border-bottom:1px solid var(--line);font-size:12.5px;color:var(--dim);line-height:1.45}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;padding:14px 22px;background:var(--panel);
+  border-bottom:1px solid var(--line);font-size:12.5px;color:var(--dim);line-height:1.45}
 .rules b{color:var(--accent);display:block;margin-bottom:3px;letter-spacing:.5px}
-.body{display:flex;gap:0;flex:1;align-items:stretch;flex-wrap:wrap}
-.tray{width:300px;min-width:260px;flex-shrink:0;border-right:1px solid var(--line);padding:14px;
-  display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 90px);overflow-y:auto}
+.body{display:flex;flex:1;align-items:stretch;flex-wrap:wrap}
+.tray{width:300px;min-width:260px;flex-shrink:0;border-right:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:10px;
+  max-height:calc(100vh - 90px);overflow-y:auto}
 .tray-head{display:flex;justify-content:space-between;align-items:baseline}
 .tray-title{font-size:11px;letter-spacing:2px;color:var(--dim);font-weight:700}
 .tray-count{font-size:11px;color:var(--accent);font-family:ui-monospace,monospace}
 .chips{display:flex;flex-direction:column;gap:6px}
-.chip{display:flex;align-items:center;gap:8px;text-align:left;font:inherit;font-size:12.5px;
-  background:var(--panel);border:1px solid var(--line);color:var(--text);padding:7px 9px;border-radius:3px;cursor:pointer}
+.chip{display:flex;align-items:center;gap:8px;text-align:left;font:inherit;font-size:12.5px;background:var(--panel);border:1px solid var(--line);
+  color:var(--text);padding:7px 9px;border-radius:3px;cursor:pointer}
 .chip:hover{border-color:var(--sp)}
 .chip.sel{border-color:var(--sp);background:var(--panel2);box-shadow:0 0 0 1px var(--sp)}
 .chip.slotted{opacity:.32}
@@ -534,42 +536,41 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .leg{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:5px}
 .leg i{width:10px;height:10px;border-radius:2px;display:inline-block}
 .racks{flex:1;min-width:340px;padding:16px 20px;overflow-x:auto}
-.aisle-strip{display:grid;grid-template-columns:70px repeat(5,1fr);gap:6px;margin-bottom:10px;align-items:center}
-.dock-tag{font-family:ui-monospace,monospace;font-size:11px;color:#15171c;background:var(--accent);
-  padding:4px 6px;font-weight:800;text-align:center;clip-path:polygon(0 0,88% 0,100% 50%,88% 100%,0 100%)}
-.bay-marker{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--accent);text-align:center;
-  border-top:2px solid var(--accent);padding-top:3px}
-.rack{margin-bottom:16px}
-.rack-label{font-size:11px;letter-spacing:2px;color:var(--dim);font-weight:700;margin-bottom:6px}
-.rack-row{display:grid;grid-template-columns:70px repeat(5,1fr);gap:6px;margin-bottom:6px}
+.aisle{margin-bottom:22px}
+.aisle-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
+.aisle-tag{font-family:ui-monospace,monospace;font-size:11px;background:var(--accent);color:#15171c;font-weight:800;padding:3px 8px;letter-spacing:1px}
+.aisle-dir{font-size:11px;color:var(--dim);letter-spacing:.5px}
+.dist-strip,.rack-row{display:grid;grid-template-columns:74px repeat(6,1fr);gap:6px;margin-bottom:6px}
+.bay-marker{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--accent);text-align:center;border-top:2px solid var(--accent);padding-top:3px}
 .lvl-tag{font-family:ui-monospace,monospace;font-size:10px;color:var(--dim);display:flex;align-items:center;justify-content:center;
-  border:1px dashed var(--line);border-radius:3px}
-.slot{position:relative;min-height:74px;border:1px solid var(--line);background:var(--panel);border-radius:3px;
-  padding:7px 9px;text-align:left;font:inherit;color:var(--text);cursor:pointer;display:flex;flex-direction:column;gap:3px}
+  border:1px dashed var(--line);border-radius:3px;letter-spacing:1px}
+.lvl-tag.ghosted{border:none}
+.slot{position:relative;min-height:74px;border:1px solid var(--line);background:var(--panel);border-radius:3px;padding:7px 9px;text-align:left;
+  font:inherit;color:var(--text);cursor:pointer;display:flex;flex-direction:column;gap:3px}
 .slot.target:not(.full){border-style:dashed;border-color:var(--accent)}
 .slot:hover{border-color:var(--accent)}
 .slot.full{border-left:4px solid var(--sp);background:var(--panel2)}
-.slot-code{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--accent);letter-spacing:1px}
+.slot-code{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--accent);letter-spacing:.5px}
 .slot-name{font-size:12px;font-weight:700;line-height:1.2}
 .slot-meta{font-family:ui-monospace,monospace;font-size:10px;color:var(--dim)}
 .slot-empty{font-size:11px;color:var(--dim);font-style:italic;margin:auto 0}
 .foot-note{font-size:11.5px;color:var(--dim);margin-top:4px}
 .simwrap{flex:1;min-height:520px;height:calc(100vh - 90px)}
-.hud{position:absolute;top:14px;left:14px;background:rgba(21,23,28,.85);border:1px solid var(--line);
-  border-left:4px solid var(--accent);padding:10px 14px;border-radius:3px;backdrop-filter:blur(4px)}
+.hud{position:absolute;top:14px;left:14px;background:rgba(21,23,28,.85);border:1px solid var(--line);border-left:4px solid var(--accent);
+  padding:10px 14px;border-radius:3px;backdrop-filter:blur(4px)}
 .hud-line{font-family:ui-monospace,monospace;font-size:13px;margin-bottom:3px}
 .hud-label{color:var(--accent);font-size:10px;letter-spacing:1.5px;margin-right:8px}
 .hud-current{font-size:12px;color:var(--dim);max-width:260px}
 .skip{position:absolute;bottom:16px;right:16px}
 .webgl-fail{display:flex;align-items:center;justify-content:center;height:100%;padding:24px}
-.webgl-fail-card{max-width:420px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
-  padding:20px;border-radius:3px;font-size:13.5px;line-height:1.5;color:var(--dim)}
+.webgl-fail-card{max-width:420px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);padding:20px;
+  border-radius:3px;font-size:13.5px;line-height:1.5;color:var(--dim)}
 .webgl-fail-card b{color:var(--text);display:block;margin-bottom:6px;font-size:15px}
 .webgl-fail-card .btn{margin-top:12px}
 .results{max-width:760px;margin:0 auto;padding:30px 22px;width:100%}
 .score-hero{display:flex;align-items:center;gap:22px;margin-bottom:26px}
-.grade{font-size:64px;font-weight:900;width:110px;height:110px;display:flex;align-items:center;justify-content:center;
-  border:3px solid var(--accent);color:var(--accent);clip-path:polygon(0 0,100% 0,100% 78%,78% 100%,0 100%)}
+.grade{font-size:64px;font-weight:900;width:110px;height:110px;display:flex;align-items:center;justify-content:center;border:3px solid var(--accent);
+  color:var(--accent);clip-path:polygon(0 0,100% 0,100% 78%,78% 100%,0 100%)}
 .grade[data-g="C"],.grade[data-g="D"]{border-color:#d95d72;color:#d95d72}
 .total{font-size:44px;font-weight:800;font-family:ui-monospace,monospace}
 .total span{font-size:18px;color:var(--dim)}
@@ -585,12 +586,10 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .results-actions{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
 @media (max-width:760px){
   .tray{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--line)}
-  .rack-row,.aisle-strip{grid-template-columns:52px repeat(5,1fr)}
+  .dist-strip,.rack-row{grid-template-columns:54px repeat(6,1fr)}
   .slot-name{font-size:10.5px}
 }
-@media (prefers-reduced-motion:reduce){
-  *{animation:none!important;transition:none!important}
-}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 `;
   ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
 })();
