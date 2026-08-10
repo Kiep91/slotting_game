@@ -616,7 +616,7 @@
       /* @__PURE__ */ React.createElement("span", { className: "chip-bar" }),
       /* @__PURE__ */ React.createElement("span", { className: "chip-name" }, p.name),
       /* @__PURE__ */ React.createElement("span", { className: "chip-stats" }, /* @__PURE__ */ React.createElement("b", null, p.weight, "w"), /* @__PURE__ */ React.createElement("b", null, p.crush, "c"), /* @__PURE__ */ React.createElement("b", null, p.velocity, "/d"))
-    ))), /* @__PURE__ */ React.createElement("div", { className: "legend" }, Object.entries(SPECIES).map(([k, v]) => /* @__PURE__ */ React.createElement("span", { key: k, className: "leg" }, /* @__PURE__ */ React.createElement("i", { style: { background: v.color } }), " ", v.label)))), /* @__PURE__ */ React.createElement("main", { className: "racks" }, AISLES.map((aisle) => /* @__PURE__ */ React.createElement("section", { key: aisle, className: "aisle" }, /* @__PURE__ */ React.createElement("div", { className: "aisle-head" }, /* @__PURE__ */ React.createElement("span", { className: "aisle-tag" }, "AISLE ", aisle), /* @__PURE__ */ React.createElement("span", { className: "aisle-dir" }, aisle === 1 ? "outbound  bay 1 \u2192 6  \u25B6" : "\u25C0  bay 6 \u2192 1  back to dock")), /* @__PURE__ */ React.createElement("div", { className: "dist-strip" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag ghosted" }), BAYS.map((b) => /* @__PURE__ */ React.createElement(React.Fragment, { key: b }, /* @__PURE__ */ React.createElement("span", { className: "bay-marker" }, "BAY ", b, " \xB7 ", pathDist({ aisle, bay: b }), " m"), b === TUNNEL_AFTER_BAY && /* @__PURE__ */ React.createElement("span", { className: "tunnel-col head" }, "\u2195")))), SIDES.map((side) => /* @__PURE__ */ React.createElement("div", { key: side, className: "rack-row" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag" }, "SIDE ", side), BAYS.map((bay) => {
+    ))), /* @__PURE__ */ React.createElement("div", { className: "legend" }, Object.entries(SPECIES).map(([k, v]) => /* @__PURE__ */ React.createElement("span", { key: k, className: "leg" }, /* @__PURE__ */ React.createElement("i", { style: { background: v.color } }), " ", v.label)))), /* @__PURE__ */ React.createElement("main", { className: "racks" }, AISLES.map((aisle) => /* @__PURE__ */ React.createElement("section", { key: aisle, className: "aisle" }, /* @__PURE__ */ React.createElement("div", { className: "aisle-head" }, /* @__PURE__ */ React.createElement("span", { className: "aisle-tag" }, "AISLE ", aisle), /* @__PURE__ */ React.createElement("span", { className: "aisle-dir" }, aisle === 1 ? "one-way outbound \xB7 bay 1 \u2192 6" : "one-way return \xB7 bay 6 \u2192 1"), /* @__PURE__ */ React.createElement("span", { className: "tunnel-key" }, "tunnel between bays 3 & 4")), /* @__PURE__ */ React.createElement("div", { className: "dist-strip" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag ghosted" }), BAYS.map((b) => /* @__PURE__ */ React.createElement(React.Fragment, { key: b }, /* @__PURE__ */ React.createElement("span", { className: "bay-marker" }, "BAY ", b, " \xB7 ", pathDist({ aisle, bay: b }), " m"), b === TUNNEL_AFTER_BAY && /* @__PURE__ */ React.createElement("span", { className: "tunnel-col head" }, "\u2195")))), SIDES.map((side) => /* @__PURE__ */ React.createElement(React.Fragment, { key: side }, /* @__PURE__ */ React.createElement("div", { className: "rack-row" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag" }, "SIDE ", side), BAYS.map((bay) => {
       const sid = slotId(aisle, side, bay);
       const pid = assignments[sid];
       const p = pid ? byId[pid] : null;
@@ -631,8 +631,15 @@
         /* @__PURE__ */ React.createElement("span", { className: "slot-code" }, sid, " \xB7 ", pathDist({ aisle, bay }), " m"),
         p ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "slot-name" }, p.name), /* @__PURE__ */ React.createElement("span", { className: "slot-meta" }, p.weight, "w \xB7 ", p.crush, "c \xB7 ", p.velocity, "/d")) : /* @__PURE__ */ React.createElement("span", { className: "slot-empty" }, selected ? "place here" : "empty")
       );
-      return bay === TUNNEL_AFTER_BAY ? /* @__PURE__ */ React.createElement(React.Fragment, { key: sid }, cell, /* @__PURE__ */ React.createElement("span", { className: `tunnel-col ${side === "B" && aisle === 1 ? "open" : side === "A" && aisle === 2 ? "open" : ""}`, title: "Pass-through tunnel" }, "TUNNEL")) : cell;
-    }))))), /* @__PURE__ */ React.createElement("p", { className: "foot-note" }, "w weight \xB7 c crushability \xB7 /d picks per day \xB7 m walking distance from the dock. Click a category, then a pick face. Click a filled face to lift it back out."))), phase === "sim" && /* @__PURE__ */ React.createElement("div", { className: "simwrap" }, /* @__PURE__ */ React.createElement(ThreeSim, { assignments, onDone: (d) => {
+      return bay === TUNNEL_AFTER_BAY ? /* @__PURE__ */ React.createElement(React.Fragment, { key: sid }, cell, /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          className: `tunnel-col ${side === "B" && aisle === 1 || side === "A" && aisle === 2 ? "open" : ""}`,
+          title: "Pass-through tunnel \u2014 usable only when every pick is in bays 1-3"
+        },
+        "TUNNEL"
+      )) : cell;
+    })), side === "A" && /* @__PURE__ */ React.createElement("div", { className: "flow-strip" }, /* @__PURE__ */ React.createElement("div", { className: "flow-tag" }, aisle === 1 ? "OUTBOUND" : "TO DOCK"), /* @__PURE__ */ React.createElement("div", { className: `flow-bar ${aisle === 2 ? "rev" : ""}` }, /* @__PURE__ */ React.createElement("span", { className: "flow-end" }, aisle === 1 ? "DOCK" : "\u25B2 cross aisle"), Array.from({ length: 11 }).map((_, i) => /* @__PURE__ */ React.createElement("i", { key: i, style: { animationDelay: `${(aisle === 1 ? i : 10 - i) * 0.14}s` } }, aisle === 1 ? "\u25B6" : "\u25C0")), /* @__PURE__ */ React.createElement("span", { className: "flow-end" }, aisle === 1 ? "cross aisle \u25BC" : "DOCK"))))))), /* @__PURE__ */ React.createElement("p", { className: "foot-note" }, "w weight \xB7 c crushability \xB7 /d picks per day \xB7 m walking distance from the dock. Click a category, then a pick face. Click a filled face to lift it back out."))), phase === "sim" && /* @__PURE__ */ React.createElement("div", { className: "simwrap" }, /* @__PURE__ */ React.createElement(ThreeSim, { assignments, onDone: (d) => {
       setSimDist(d);
       recordScore(scores);
       setPhase("results");
@@ -718,10 +725,23 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .slot-meta{font-family:ui-monospace,monospace;font-size:10px;color:var(--dim)}
 .slot-empty{font-size:11px;color:var(--dim);font-style:italic;margin:auto 0}
 .tunnel-col{display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-size:8px;
-  letter-spacing:1px;color:var(--dim);writing-mode:vertical-rl;text-orientation:mixed;border-left:1px dashed var(--line);
-  border-right:1px dashed var(--line);border-radius:2px}
-.tunnel-col.open{color:var(--accent);border-color:var(--accent);background:rgba(242,185,13,.07)}
+  letter-spacing:1px;color:rgba(242,185,13,.55);writing-mode:vertical-rl;text-orientation:mixed;
+  border-left:1px solid rgba(242,185,13,.35);border-right:1px solid rgba(242,185,13,.35);border-radius:2px;
+  background:repeating-linear-gradient(45deg,rgba(242,185,13,.09) 0 4px,transparent 4px 9px)}
+.tunnel-col.open{color:#15171c;font-weight:800;background:var(--accent);border-color:var(--accent)}
 .tunnel-col.head{border:none;color:var(--accent);font-size:12px;writing-mode:horizontal-tb}
+.flow-strip{display:grid;grid-template-columns:74px repeat(3,1fr) 30px repeat(3,1fr);gap:6px;margin:2px 0 8px}
+.flow-tag{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:1px;color:var(--accent);display:flex;
+  align-items:center;justify-content:center;border:1px solid rgba(242,185,13,.35);border-radius:3px}
+.flow-bar{grid-column:2 / -1;display:flex;align-items:center;justify-content:space-between;gap:4px;height:28px;padding:0 10px;
+  border:1px solid rgba(242,185,13,.3);border-radius:3px;overflow:hidden;
+  background:linear-gradient(90deg,rgba(242,185,13,.16),rgba(242,185,13,.03))}
+.flow-bar.rev{background:linear-gradient(90deg,rgba(242,185,13,.03),rgba(242,185,13,.16))}
+.flow-bar i{font-style:normal;font-size:12px;color:var(--accent);opacity:.25;animation:flowpulse 1.7s linear infinite}
+.flow-end{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:1px;color:var(--dim);white-space:nowrap}
+@keyframes flowpulse{0%,100%{opacity:.18}45%{opacity:.95}}
+.tunnel-key{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--accent);border:1px dashed rgba(242,185,13,.5);
+  padding:2px 7px;border-radius:2px;letter-spacing:.5px}
 .foot-note{font-size:11.5px;color:var(--dim);margin-top:4px}
 .simwrap{flex:1;min-height:520px;height:calc(100vh - 90px)}
 .hud{position:absolute;top:14px;left:14px;background:rgba(21,23,28,.85);border:1px solid var(--line);border-left:4px solid var(--accent);
@@ -786,10 +806,11 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .results-actions{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
 @media (max-width:760px){
   .tray{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--line)}
-  .dist-strip,.rack-row{grid-template-columns:54px repeat(3,1fr) 22px repeat(3,1fr)}
+  .dist-strip,.rack-row,.flow-strip{grid-template-columns:54px repeat(3,1fr) 22px repeat(3,1fr)}
+  .flow-end{display:none}
   .slot-name{font-size:10.5px}
 }
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.flow-bar i{opacity:.6}}
 `;
   ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
 })();
