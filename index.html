@@ -294,24 +294,33 @@
           }
         });
       });
-      const chevron = (cx, cz, dir) => {
+      const chevrons = [];
+      const chevron = (cx, cz, dir, seq) => {
         const sh = new THREE.Shape();
         sh.moveTo(-0.4 * dir, -0.45);
         sh.lineTo(0.5 * dir, 0);
         sh.lineTo(-0.4 * dir, 0.45);
         const m = new THREE.Mesh(
           new THREE.ShapeGeometry(sh),
-          new THREE.MeshBasicMaterial({ color: 7978472, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+          new THREE.MeshBasicMaterial({ color: 16291880, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
         );
         m.rotation.x = -Math.PI / 2;
         m.position.set(cx, 0.014, cz);
+        m.userData.seq = seq;
+        chevrons.push(m);
         scene.add(m);
       };
-      for (let x = 3; x < AISLE_LEN; x += 5) {
-        chevron(x, AISLE_Z[1], 1);
-        chevron(x, AISLE_Z[2], -1);
+      {
+        let i = 0;
+        const xs = [];
+        for (let x = 3; x < AISLE_LEN; x += 3.5) xs.push(x);
+        xs.forEach((x, k) => {
+          chevron(x, AISLE_Z[1], 1, k);
+          chevron(x, AISLE_Z[2], -1, xs.length - 1 - k);
+          i++;
+        });
       }
-      const tunnelMat = new THREE.MeshStandardMaterial({ color: 16291880, roughness: 0.5, metalness: 0.25 });
+      const tunnelMat = new THREE.MeshStandardMaterial({ color: 16291880, roughness: 0.5, metalness: 0.25, emissive: new THREE.Color(16291880) });
       const tunnelPaint = new THREE.MeshStandardMaterial({ color: 16291880 });
       const lintel = new THREE.Mesh(new THREE.BoxGeometry(TUNNEL_W, 0.16, MIDBLOCK[1] - MIDBLOCK[0] + 0.9), tunnelMat);
       lintel.position.set(TUNNEL_X, 3.05, (MIDBLOCK[0] + MIDBLOCK[1]) / 2);
@@ -423,8 +432,8 @@
           pickT += dt;
           const mesh = slotMeshes[target.pick];
           if (mesh) {
-            const t = Math.min(pickT / 0.8, 1);
-            const ease = t * t * (3 - 2 * t);
+            const t2 = Math.min(pickT / 0.8, 1);
+            const ease = t2 * t2 * (3 - 2 * t2);
             const from = mesh.userData.from || (mesh.userData.from = mesh.position.clone());
             const col = cartStack % 3;
             const h = boxH(mesh) * 0.55;
@@ -463,6 +472,12 @@
         );
         camera.position.lerp(camPos, 0.05);
         camera.lookAt(picker.position.x + heading.x * 5, 1.1, picker.position.z + heading.z * 5);
+        const t = clock.elapsedTime;
+        chevrons.forEach((c) => {
+          const ph = (t * 1.5 - c.userData.seq * 0.22) % 1.6;
+          c.material.opacity = ph > 0 && ph < 0.5 ? 0.25 + 0.7 * Math.sin(ph / 0.5 * Math.PI) : 0.22;
+        });
+        lintel.material.emissive.setScalar(0.08 + 0.07 * Math.sin(t * 2.2));
         renderer.render(scene, camera);
       }
       animate();
@@ -661,7 +676,7 @@
   }
   const CSS = `
 :root{--bg:#293847;--panel:#324357;--panel2:#3b4e63;--line:#4a5f76;--accent:#79bde8;--text:#ffffff;--dim:#a8bacb;
-  --tunnel:#f89828;--good:#aebb35;--ink:#1e2a36}
+  --flow:#f89828;--good:#aebb35;--ink:#1e2a36}
 *{box-sizing:border-box}
 .app{min-height:100vh;background:repeating-linear-gradient(90deg,transparent 0 119px,rgba(255,255,255,.015) 119px 120px),var(--bg);
   color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
@@ -728,22 +743,22 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .slot-meta{font-family:ui-monospace,monospace;font-size:10px;color:var(--dim)}
 .slot-empty{font-size:11px;color:var(--dim);font-style:italic;margin:auto 0}
 .tunnel-col{display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-size:8px;
-  letter-spacing:1px;color:rgba(248,152,40,.7);writing-mode:vertical-rl;text-orientation:mixed;
-  border-left:1px solid rgba(248,152,40,.45);border-right:1px solid rgba(248,152,40,.45);border-radius:2px;
-  background:repeating-linear-gradient(45deg,rgba(248,152,40,.12) 0 4px,transparent 4px 9px)}
-.tunnel-col.open{color:var(--ink);font-weight:800;background:var(--tunnel);border-color:var(--tunnel)}
+  letter-spacing:1px;color:rgba(248,152,40,.75);writing-mode:vertical-rl;text-orientation:mixed;
+  border-left:1px solid rgba(248,152,40,.5);border-right:1px solid rgba(248,152,40,.5);border-radius:2px;
+  background:repeating-linear-gradient(45deg,rgba(248,152,40,.14) 0 4px,transparent 4px 9px)}
+.tunnel-col.open{color:var(--ink);font-weight:800;background:var(--flow);border-color:var(--flow)}
 .tunnel-col.head{border:none;color:var(--accent);font-size:12px;writing-mode:horizontal-tb}
 .flow-strip{display:grid;grid-template-columns:74px repeat(3,1fr) 30px repeat(3,1fr);gap:6px;margin:2px 0 8px}
-.flow-tag{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:1px;color:var(--accent);display:flex;
-  align-items:center;justify-content:center;border:1px solid rgba(121,189,232,.35);border-radius:3px}
+.flow-tag{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:1px;color:var(--flow);display:flex;
+  align-items:center;justify-content:center;border:1px solid rgba(248,152,40,.45);border-radius:3px}
 .flow-bar{grid-column:2 / -1;display:flex;align-items:center;justify-content:space-between;gap:4px;height:28px;padding:0 10px;
-  border:1px solid rgba(121,189,232,.3);border-radius:3px;overflow:hidden;
-  background:linear-gradient(90deg,rgba(121,189,232,.18),rgba(121,189,232,.04))}
-.flow-bar.rev{background:linear-gradient(90deg,rgba(121,189,232,.04),rgba(121,189,232,.18))}
-.flow-bar i{font-style:normal;font-size:12px;color:var(--accent);opacity:.25;animation:flowpulse 1.7s linear infinite}
+  border:1px solid rgba(248,152,40,.4);border-radius:3px;overflow:hidden;
+  background:linear-gradient(90deg,rgba(248,152,40,.2),rgba(248,152,40,.04))}
+.flow-bar.rev{background:linear-gradient(90deg,rgba(248,152,40,.04),rgba(248,152,40,.2))}
+.flow-bar i{font-style:normal;font-size:12px;color:var(--flow);opacity:.25;animation:flowpulse 1.7s linear infinite}
 .flow-end{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:1px;color:var(--dim);white-space:nowrap}
 @keyframes flowpulse{0%,100%{opacity:.18}45%{opacity:.95}}
-.tunnel-key{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--tunnel);border:1px dashed rgba(248,152,40,.55);
+.tunnel-key{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--flow);border:1px dashed rgba(248,152,40,.55);
   padding:2px 7px;border-radius:2px;letter-spacing:.5px}
 .foot-note{font-size:11.5px;color:var(--dim);margin-top:4px}
 .simwrap{flex:1;min-height:520px;height:calc(100vh - 90px)}
