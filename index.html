@@ -15,12 +15,12 @@
 (() => {
   const { useState, useEffect, useRef, useMemo } = React;
   const SPECIES = {
-    dog: { label: "Dog", color: "#5b8ef7" },
-    cat: { label: "Cat", color: "#f08a3c" },
-    bird: { label: "Bird", color: "#4cba6f" },
+    dog: { label: "Dog", color: "#6c7ff0" },
+    cat: { label: "Cat", color: "#f89828" },
+    bird: { label: "Bird", color: "#5fd07a" },
     fish: { label: "Fish", color: "#35c4c8" },
-    small: { label: "Small Animal", color: "#a276f0" },
-    reptile: { label: "Reptile", color: "#d95d72" }
+    small: { label: "Small Animal", color: "#b07cf5" },
+    reptile: { label: "Reptile", color: "#e4566e" }
   };
   const PRODUCTS = [
     { id: "dogfood", name: "Dog Food 15 kg Bags", species: "dog", weight: 9, crush: 2, velocity: 90 },
@@ -239,8 +239,8 @@
         return;
       }
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(1119e3);
-      scene.fog = new THREE.Fog(1119e3, 28, 70);
+      scene.background = new THREE.Color(1976886);
+      scene.fog = new THREE.Fog(1976886, 28, 70);
       const camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 140);
       renderer.setSize(W, H);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -254,11 +254,11 @@
       Object.assign(sun.shadow.camera, { left: -30, right: AISLE_LEN + 20, top: 40, bottom: -20 });
       sun.shadow.camera.updateProjectionMatrix();
       scene.add(sun);
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 90), new THREE.MeshStandardMaterial({ color: 1908774, roughness: 0.95 }));
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(120, 90), new THREE.MeshStandardMaterial({ color: 2240573, roughness: 0.95 }));
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
       scene.add(floor);
-      const paint = new THREE.MeshStandardMaterial({ color: 15907085 });
+      const paint = new THREE.MeshStandardMaterial({ color: 7978472 });
       const stripe = (w, d, x, z) => {
         const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, d), paint);
         m.position.set(x, 0.011, z);
@@ -268,8 +268,8 @@
       [-2.1, 2.1].forEach((dz) => stripe(AISLE_LEN + 4, 0.12, AISLE_LEN / 2, AISLE_Z[2] + dz));
       stripe(0.12, AISLE_Z[2] - AISLE_Z[1] + 4, FAR_X + 0.6, (AISLE_Z[1] + AISLE_Z[2]) / 2);
       stripe(0.15, 4.2, DOCK_X, 0);
-      const steel = new THREE.MeshStandardMaterial({ color: 3752527, roughness: 0.6, metalness: 0.4 });
-      const beamMat = new THREE.MeshStandardMaterial({ color: 13199915, roughness: 0.5, metalness: 0.3 });
+      const steel = new THREE.MeshStandardMaterial({ color: 4610670, roughness: 0.6, metalness: 0.4 });
+      const beamMat = new THREE.MeshStandardMaterial({ color: 12875306, roughness: 0.5, metalness: 0.3 });
       Object.values(RACK_Z).forEach((z) => {
         const isMid = MIDBLOCK.includes(z);
         for (let x = 0; x <= AISLE_LEN; x += BAY_M) {
@@ -301,7 +301,7 @@
         sh.lineTo(-0.4 * dir, 0.45);
         const m = new THREE.Mesh(
           new THREE.ShapeGeometry(sh),
-          new THREE.MeshBasicMaterial({ color: 15907085, transparent: true, opacity: 0.38, side: THREE.DoubleSide })
+          new THREE.MeshBasicMaterial({ color: 7978472, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
         );
         m.rotation.x = -Math.PI / 2;
         m.position.set(cx, 0.014, cz);
@@ -311,12 +311,14 @@
         chevron(x, AISLE_Z[1], 1);
         chevron(x, AISLE_Z[2], -1);
       }
-      const lintel = new THREE.Mesh(new THREE.BoxGeometry(TUNNEL_W, 0.16, MIDBLOCK[1] - MIDBLOCK[0] + 0.9), beamMat);
+      const tunnelMat = new THREE.MeshStandardMaterial({ color: 16291880, roughness: 0.5, metalness: 0.25 });
+      const tunnelPaint = new THREE.MeshStandardMaterial({ color: 16291880 });
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(TUNNEL_W, 0.16, MIDBLOCK[1] - MIDBLOCK[0] + 0.9), tunnelMat);
       lintel.position.set(TUNNEL_X, 3.05, (MIDBLOCK[0] + MIDBLOCK[1]) / 2);
       lintel.castShadow = true;
       scene.add(lintel);
       [-TUNNEL_W / 2, TUNNEL_W / 2].forEach((dx) => {
-        const edge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, MIDBLOCK[1] - MIDBLOCK[0] + 3), paint);
+        const edge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, MIDBLOCK[1] - MIDBLOCK[0] + 3), tunnelPaint);
         edge.position.set(TUNNEL_X + dx, 0.011, (MIDBLOCK[0] + MIDBLOCK[1]) / 2);
         scene.add(edge);
       });
@@ -335,13 +337,13 @@
         slotMeshes[pid] = mesh;
       });
       const picker = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 1.15, 12), new THREE.MeshStandardMaterial({ color: 14147632, roughness: 0.6 }));
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 1.15, 12), new THREE.MeshStandardMaterial({ color: 11451189, roughness: 0.6 }));
       body.position.y = 0.85;
       body.castShadow = true;
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 12), new THREE.MeshStandardMaterial({ color: 14263929 }));
       head.position.y = 1.7;
       head.castShadow = true;
-      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 12), new THREE.MeshStandardMaterial({ color: 2845872 }));
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 12), new THREE.MeshStandardMaterial({ color: 16291880 }));
       cap.position.y = 1.88;
       picker.add(body, head, cap);
       picker.position.set(DOCK_X, 0, 0);
@@ -351,7 +353,7 @@
       bed.position.y = 0.35;
       cart.add(bed);
       [-0.5, 0.5].forEach((x) => [-0.34, 0.34].forEach((z) => {
-        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 10), new THREE.MeshStandardMaterial({ color: 1316378 }));
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 10), new THREE.MeshStandardMaterial({ color: 1581612 }));
         w.rotation.x = Math.PI / 2;
         w.position.set(x, 0.12, z);
         cart.add(w);
@@ -658,13 +660,14 @@
     } }, "Next player \u25B8"))));
   }
   const CSS = `
-:root{--bg:#15171c;--panel:#1e222a;--panel2:#242933;--line:#343c49;--accent:#f2b90d;--text:#eceada;--dim:#98a1b0}
+:root{--bg:#293847;--panel:#324357;--panel2:#3b4e63;--line:#4a5f76;--accent:#79bde8;--text:#ffffff;--dim:#a8bacb;
+  --tunnel:#f89828;--good:#aebb35;--ink:#1e2a36}
 *{box-sizing:border-box}
 .app{min-height:100vh;background:repeating-linear-gradient(90deg,transparent 0 119px,rgba(255,255,255,.015) 119px 120px),var(--bg);
   color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
 .hdr{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 22px;border-bottom:2px solid var(--accent)}
 .hdr-left{display:flex;align-items:center;gap:14px}
-.logo-mark{font-family:ui-monospace,Menlo,monospace;background:var(--accent);color:#15171c;font-weight:800;padding:8px 10px;font-size:14px;
+.logo-mark{font-family:ui-monospace,Menlo,monospace;background:var(--accent);color:var(--ink);font-weight:800;padding:8px 10px;font-size:14px;
   letter-spacing:1px;clip-path:polygon(0 0,100% 0,100% 70%,85% 100%,0 100%)}
 h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .sub{margin:2px 0 0;font-size:12px;color:var(--dim)}
@@ -673,7 +676,7 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
   background:var(--panel);color:var(--text);letter-spacing:.3px}
 .btn:hover{border-color:var(--accent)}
 .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn.primary{background:var(--accent);color:#15171c;border-color:var(--accent);font-weight:800}
+.btn.primary{background:var(--accent);color:var(--ink);border-color:var(--accent);font-weight:800}
 .btn.primary:disabled{background:var(--panel2);color:var(--dim);border-color:var(--line);cursor:not-allowed}
 .btn.ghost{background:transparent}
 .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;padding:14px 22px;background:var(--panel);
@@ -708,7 +711,7 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .racks{flex:1;min-width:340px;padding:16px 20px;overflow-x:auto}
 .aisle{margin-bottom:22px}
 .aisle-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
-.aisle-tag{font-family:ui-monospace,monospace;font-size:11px;background:var(--accent);color:#15171c;font-weight:800;padding:3px 8px;letter-spacing:1px}
+.aisle-tag{font-family:ui-monospace,monospace;font-size:11px;background:var(--accent);color:var(--ink);font-weight:800;padding:3px 8px;letter-spacing:1px}
 .aisle-dir{font-size:11px;color:var(--dim);letter-spacing:.5px}
 .dist-strip,.rack-row{display:grid;grid-template-columns:74px repeat(3,1fr) 30px repeat(3,1fr);gap:6px;margin-bottom:6px}
 .bay-marker{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--accent);text-align:center;border-top:2px solid var(--accent);padding-top:3px}
@@ -725,22 +728,22 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .slot-meta{font-family:ui-monospace,monospace;font-size:10px;color:var(--dim)}
 .slot-empty{font-size:11px;color:var(--dim);font-style:italic;margin:auto 0}
 .tunnel-col{display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-size:8px;
-  letter-spacing:1px;color:rgba(242,185,13,.55);writing-mode:vertical-rl;text-orientation:mixed;
-  border-left:1px solid rgba(242,185,13,.35);border-right:1px solid rgba(242,185,13,.35);border-radius:2px;
-  background:repeating-linear-gradient(45deg,rgba(242,185,13,.09) 0 4px,transparent 4px 9px)}
-.tunnel-col.open{color:#15171c;font-weight:800;background:var(--accent);border-color:var(--accent)}
+  letter-spacing:1px;color:rgba(248,152,40,.7);writing-mode:vertical-rl;text-orientation:mixed;
+  border-left:1px solid rgba(248,152,40,.45);border-right:1px solid rgba(248,152,40,.45);border-radius:2px;
+  background:repeating-linear-gradient(45deg,rgba(248,152,40,.12) 0 4px,transparent 4px 9px)}
+.tunnel-col.open{color:var(--ink);font-weight:800;background:var(--tunnel);border-color:var(--tunnel)}
 .tunnel-col.head{border:none;color:var(--accent);font-size:12px;writing-mode:horizontal-tb}
 .flow-strip{display:grid;grid-template-columns:74px repeat(3,1fr) 30px repeat(3,1fr);gap:6px;margin:2px 0 8px}
 .flow-tag{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:1px;color:var(--accent);display:flex;
-  align-items:center;justify-content:center;border:1px solid rgba(242,185,13,.35);border-radius:3px}
+  align-items:center;justify-content:center;border:1px solid rgba(121,189,232,.35);border-radius:3px}
 .flow-bar{grid-column:2 / -1;display:flex;align-items:center;justify-content:space-between;gap:4px;height:28px;padding:0 10px;
-  border:1px solid rgba(242,185,13,.3);border-radius:3px;overflow:hidden;
-  background:linear-gradient(90deg,rgba(242,185,13,.16),rgba(242,185,13,.03))}
-.flow-bar.rev{background:linear-gradient(90deg,rgba(242,185,13,.03),rgba(242,185,13,.16))}
+  border:1px solid rgba(121,189,232,.3);border-radius:3px;overflow:hidden;
+  background:linear-gradient(90deg,rgba(121,189,232,.18),rgba(121,189,232,.04))}
+.flow-bar.rev{background:linear-gradient(90deg,rgba(121,189,232,.04),rgba(121,189,232,.18))}
 .flow-bar i{font-style:normal;font-size:12px;color:var(--accent);opacity:.25;animation:flowpulse 1.7s linear infinite}
 .flow-end{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:1px;color:var(--dim);white-space:nowrap}
 @keyframes flowpulse{0%,100%{opacity:.18}45%{opacity:.95}}
-.tunnel-key{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--accent);border:1px dashed rgba(242,185,13,.5);
+.tunnel-key{font-family:ui-monospace,monospace;font-size:9.5px;color:var(--tunnel);border:1px dashed rgba(248,152,40,.55);
   padding:2px 7px;border-radius:2px;letter-spacing:.5px}
 .foot-note{font-size:11.5px;color:var(--dim);margin-top:4px}
 .simwrap{flex:1;min-height:520px;height:calc(100vh - 90px)}
@@ -767,7 +770,7 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .field input{width:100%;font:inherit;font-size:14px;padding:10px 12px;background:var(--bg);color:var(--text);
   border:1px solid var(--line);border-radius:3px}
 .field input:focus{outline:none;border-color:var(--accent)}
-.form-err{font-size:12.5px;color:#d95d72;margin-bottom:10px}
+.form-err{font-size:12.5px;color:#e4566e;margin-bottom:10px}
 .btn.wide{width:100%;padding:12px}
 .btn.tiny{font-size:11px;padding:5px 9px}
 .privacy{font-size:11px;color:var(--dim);line-height:1.5;margin:14px 0 0}
@@ -777,12 +780,13 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .lb-row{display:grid;grid-template-columns:26px 1fr 26px 42px;align-items:center;gap:8px;padding:8px 6px;
   border-bottom:1px solid var(--line);font-size:13px}
 .lb-row:last-child{border-bottom:none}
-.lb-row.me{background:rgba(242,185,13,.09);border-left:3px solid var(--accent);padding-left:9px}
+.lb-row.me{background:rgba(121,189,232,.11);border-left:3px solid var(--accent);padding-left:9px}
 .lb-rank{font-family:ui-monospace,monospace;font-size:11px;color:var(--dim)}
 .lb-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lb-name em{display:block;font-style:normal;font-size:10.5px;color:var(--dim);font-family:ui-monospace,monospace}
 .lb-grade{font-weight:800;font-size:12px;color:var(--accent);text-align:center}
-.lb-grade[data-g="C"],.lb-grade[data-g="D"]{color:#d95d72}
+.lb-grade[data-g="S"],.lb-grade[data-g="A"]{color:var(--good)}
+.lb-grade[data-g="C"],.lb-grade[data-g="D"]{color:#e4566e}
 .lb-score{font-family:ui-monospace,monospace;font-weight:700;text-align:right}
 .lb-empty{font-size:12.5px;color:var(--dim);font-style:italic;padding:10px 0}
 .results-lb{margin-top:30px;padding-top:22px;border-top:1px solid var(--line)}
@@ -791,7 +795,8 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .score-hero{display:flex;align-items:center;gap:22px;margin-bottom:26px}
 .grade{font-size:64px;font-weight:900;width:110px;height:110px;display:flex;align-items:center;justify-content:center;border:3px solid var(--accent);
   color:var(--accent);clip-path:polygon(0 0,100% 0,100% 78%,78% 100%,0 100%)}
-.grade[data-g="C"],.grade[data-g="D"]{border-color:#d95d72;color:#d95d72}
+.grade[data-g="S"],.grade[data-g="A"]{border-color:var(--good);color:var(--good)}
+.grade[data-g="C"],.grade[data-g="D"]{border-color:#e4566e;color:#e4566e}
 .total{font-size:44px;font-weight:800;font-family:ui-monospace,monospace}
 .total span{font-size:18px;color:var(--dim)}
 .total-sub{font-size:13px;color:var(--dim)}
@@ -802,7 +807,7 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .bar{height:10px;background:var(--panel2);border:1px solid var(--line);border-radius:2px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--accent)}
 .offenders{margin:7px 0 0;padding-left:18px;font-size:12.5px;color:var(--dim);line-height:1.5}
-.clean{font-size:12px;color:#4cba6f;margin-top:5px}
+.clean{font-size:12px;color:var(--good);margin-top:5px}
 .results-actions{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
 @media (max-width:760px){
   .tray{width:100%;max-height:none;border-right:none;border-bottom:1px solid var(--line)}
