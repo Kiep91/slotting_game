@@ -23,30 +23,30 @@
     reptile: { label: "Reptile", color: "#e4566e" }
   };
   const PRODUCTS = [
-    { id: "dogfood", name: "Dog Food 15 kg Bags", species: "dog", weight: 9, crush: 2, velocity: 90 },
-    { id: "dogcans", name: "Dog Cans (Case)", species: "dog", weight: 7, crush: 3, velocity: 70 },
-    { id: "dogtreats", name: "Dog Treats", species: "dog", weight: 2, crush: 6, velocity: 85 },
-    { id: "dogtoys", name: "Dog Toys", species: "dog", weight: 2, crush: 3, velocity: 50 },
-    { id: "dogchews", name: "Dog Chews", species: "dog", weight: 3, crush: 4, velocity: 60 },
-    { id: "pads", name: "Puppy Pads", species: "dog", weight: 4, crush: 8, velocity: 75 },
-    { id: "litter", name: "Cat Litter 18 kg", species: "cat", weight: 10, crush: 2, velocity: 95 },
-    { id: "catcans", name: "Cat Cans (Case)", species: "cat", weight: 7, crush: 3, velocity: 80 },
-    { id: "catdry", name: "Cat Dry Food Bags", species: "cat", weight: 6, crush: 4, velocity: 75 },
-    { id: "cattreats", name: "Cat Treats", species: "cat", weight: 1, crush: 7, velocity: 65 },
-    { id: "cattoys", name: "Cat Toys", species: "cat", weight: 1, crush: 5, velocity: 40 },
-    { id: "birdseed", name: "Wild Bird Seed 10 kg", species: "bird", weight: 8, crush: 3, velocity: 45 },
-    { id: "cages", name: "Bird Cages", species: "bird", weight: 5, crush: 7, velocity: 10 },
-    { id: "fishfood", name: "Fish Food", species: "fish", weight: 1, crush: 8, velocity: 30 },
-    { id: "aquarium", name: "Aquarium Glass Kits", species: "fish", weight: 6, crush: 10, velocity: 8 },
-    { id: "bedding", name: "Small Animal Bedding", species: "small", weight: 3, crush: 6, velocity: 35 },
-    { id: "safood", name: "Small Animal Food", species: "small", weight: 3, crush: 5, velocity: 30 },
-    { id: "hay", name: "Hay Bales", species: "small", weight: 4, crush: 5, velocity: 25 },
-    { id: "lamps", name: "Reptile Heat Lamps", species: "reptile", weight: 2, crush: 9, velocity: 12 },
-    { id: "substrate", name: "Reptile Substrate", species: "reptile", weight: 4, crush: 4, velocity: 15 },
-    { id: "flea", name: "Flea & Tick Treatments", species: "dog", weight: 1, crush: 6, velocity: 55 },
-    { id: "gravel", name: "Aquarium Gravel & D\xE9cor", species: "fish", weight: 7, crush: 3, velocity: 18 },
-    { id: "feeders", name: "Bird Feeders", species: "bird", weight: 3, crush: 6, velocity: 28 },
-    { id: "sacages", name: "Small Animal Cages", species: "small", weight: 5, crush: 8, velocity: 12 }
+    { id: "dogfood", name: "Dog Food 15 kg Bags", species: "dog", weight: 9, crush: 2, cube: 8, velocity: 90 },
+    { id: "dogcans", name: "Dog Cans (Case)", species: "dog", weight: 7, crush: 3, cube: 5, velocity: 70 },
+    { id: "dogtreats", name: "Dog Treats", species: "dog", weight: 2, crush: 6, cube: 3, velocity: 85 },
+    { id: "dogbeds", name: "Dog Beds & Crate Mats", species: "dog", weight: 4, crush: 8, cube: 10, velocity: 40 },
+    { id: "dogchews", name: "Dog Chews", species: "dog", weight: 3, crush: 4, cube: 4, velocity: 60 },
+    { id: "pads", name: "Puppy Pads", species: "dog", weight: 4, crush: 8, cube: 7, velocity: 75 },
+    { id: "flea", name: "Flea & Tick Treatments", species: "dog", weight: 1, crush: 6, cube: 1, velocity: 55 },
+    { id: "litter", name: "Cat Litter 18 kg", species: "cat", weight: 10, crush: 2, cube: 7, velocity: 95 },
+    { id: "catcans", name: "Cat Cans (Case)", species: "cat", weight: 7, crush: 3, cube: 5, velocity: 80 },
+    { id: "catdry", name: "Cat Dry Food Bags", species: "cat", weight: 6, crush: 4, cube: 6, velocity: 75 },
+    { id: "cattreats", name: "Cat Treats", species: "cat", weight: 1, crush: 7, cube: 2, velocity: 65 },
+    { id: "cattrees", name: "Cat Trees & Scratchers", species: "cat", weight: 6, crush: 7, cube: 10, velocity: 30 },
+    { id: "birdseed", name: "Wild Bird Seed 10 kg", species: "bird", weight: 8, crush: 3, cube: 6, velocity: 45 },
+    { id: "cages", name: "Bird Cages", species: "bird", weight: 5, crush: 7, cube: 9, velocity: 10 },
+    { id: "feeders", name: "Bird Feeders", species: "bird", weight: 3, crush: 6, cube: 5, velocity: 28 },
+    { id: "fishfood", name: "Fish Food", species: "fish", weight: 1, crush: 8, cube: 2, velocity: 30 },
+    { id: "aquarium", name: "Aquarium Glass Kits", species: "fish", weight: 6, crush: 10, cube: 8, velocity: 8 },
+    { id: "gravel", name: "Aquarium Gravel & D\xE9cor", species: "fish", weight: 7, crush: 3, cube: 4, velocity: 18 },
+    { id: "bedding", name: "Small Animal Bedding", species: "small", weight: 3, crush: 6, cube: 9, velocity: 35 },
+    { id: "safood", name: "Small Animal Food", species: "small", weight: 3, crush: 5, cube: 4, velocity: 30 },
+    { id: "hay", name: "Hay Bales", species: "small", weight: 4, crush: 5, cube: 9, velocity: 25 },
+    { id: "sacages", name: "Small Animal Cages", species: "small", weight: 5, crush: 8, cube: 9, velocity: 12 },
+    { id: "terrarium", name: "Reptile Terrariums", species: "reptile", weight: 7, crush: 9, cube: 9, velocity: 10 },
+    { id: "substrate", name: "Reptile Substrate", species: "reptile", weight: 4, crush: 4, cube: 5, velocity: 15 }
   ];
   const byId = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
   const AISLES = [1, 2];
@@ -139,15 +139,40 @@
     });
     return { score: clamp(total / PRODUCTS.length / 0.7 * 100), offenders: loners.slice(0, 4) };
   }
+  function scoreStability(loc) {
+    const bigs = PRODUCTS.filter((p) => p.cube >= 7);
+    const smalls = PRODUCTS.filter((p) => p.cube <= 4);
+    let maxViol = 0, viol = 0;
+    const pairs = [];
+    bigs.forEach((b) => {
+      smalls.forEach((sm) => {
+        if (b.id === sm.id) return;
+        const sev = (b.cube - 6) * (5 - sm.cube);
+        maxViol += sev;
+        const db = pathDist(loc[b.id]), ds = pathDist(loc[sm.id]);
+        if (db > ds) {
+          viol += sev;
+          pairs.push({ sev, txt: `${b.name} (cube ${b.cube}) is picked after ${sm.name} (cube ${sm.cube}) \u2014 a bulky carton balanced on a small one` });
+        } else if (db === ds) {
+          viol += sev / 2;
+        }
+      });
+    });
+    pairs.sort((a, b) => b.sev - a.sev);
+    return { score: maxViol === 0 ? 100 : clamp(100 * (1 - viol / maxViol)), offenders: pairs.slice(0, 3).map((p) => p.txt) };
+  }
   function computeScores(assignments) {
     const loc = parseAssignments(assignments);
     const travel = scoreTravel(loc);
     const handling = scoreHandling(loc);
     const damage = scoreDamage(loc);
+    const stability = scoreStability(loc);
     const species = scoreSpecies(loc);
-    const total = Math.round(travel.score * 0.35 + damage.score * 0.25 + handling.score * 0.2 + species.score * 0.2);
+    const total = Math.round(
+      travel.score * 0.3 + damage.score * 0.2 + stability.score * 0.15 + handling.score * 0.15 + species.score * 0.2
+    );
     const grade = total >= 90 ? "S" : total >= 80 ? "A" : total >= 70 ? "B" : total >= 55 ? "C" : "D";
-    return { travel, handling, damage, species, total, grade };
+    return { travel, handling, damage, stability, species, total, grade };
   }
   function sampleOrder(n = 8) {
     const pool = [...PRODUCTS];
@@ -197,8 +222,8 @@
     return d.length >= 4 ? `\u2022\u2022\u2022 \u2022\u2022\u2022 ${d.slice(-4)}` : "\u2022\u2022\u2022";
   }
   function exportCsv(board) {
-    const rows = [["Rank", "Name", "Phone", "Score", "Grade", "Travel", "Damage", "Handling", "Species", "Played"]];
-    board.forEach((e, i) => rows.push([i + 1, e.name, e.phone, e.total, e.grade, e.travel, e.damage, e.handling, e.species, new Date(e.at).toLocaleString()]));
+    const rows = [["Rank", "Name", "Phone", "Score", "Grade", "Travel", "Damage", "Species", "Stability", "Handling", "Played"]];
+    board.forEach((e, i) => rows.push([i + 1, e.name, e.phone, e.total, e.grade, e.travel, e.damage, e.species, e.stability ?? "", e.handling, new Date(e.at).toLocaleString()]));
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = document.createElement("a");
@@ -335,9 +360,9 @@
       Object.entries(assignments).forEach(([sid, pid]) => {
         if (!pid) return;
         const s = slotById[sid], p = byId[pid];
-        const size = 0.75 + p.weight * 0.07;
+        const size = 0.5 + p.cube * 0.075;
         const mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(size * 1.25, size, 0.85),
+          new THREE.BoxGeometry(size * 1.2, size, 0.8 + p.cube * 0.03),
           new THREE.MeshStandardMaterial({ color: new THREE.Color(SPECIES[p.species].color), roughness: 0.7 })
         );
         mesh.position.set(bayX(s.bay), size / 2, RACK_Z[`${s.aisle}${s.side}`]);
@@ -577,6 +602,7 @@
         damage: sc.damage.score,
         handling: sc.handling.score,
         species: sc.species.score,
+        stability: sc.stability.score,
         at: Date.now()
       };
       const next = [...loadBoard(), entry].sort((a, b) => b.total - a.total || a.at - b.at).slice(0, 50);
@@ -598,7 +624,7 @@
     } }, "Clear"), /* @__PURE__ */ React.createElement("button", { className: "btn primary", disabled: !allSlotted, onClick: () => {
       setSimDist(null);
       setPhase("sim");
-    } }, allSlotted ? "Run the picker \u25B8" : `${PRODUCTS.length - slottedIds.size} left to slot`))), showRules && phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "rules" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "One-way flow"), " Aisle 1 runs outbound (bay 1 \u2192 6), aisle 2 runs back to the dock (bay 6 \u2192 1). The picker never reverses, so every order is a full loop."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "The tunnel"), " A pass-through cuts the middle block between bays 3 and 4. It can only be used if ", /* @__PURE__ */ React.createElement("em", null, "every"), " line on the order sits in bays 1\u20133 \u2014 one pick in bay 4\u20136 and the picker is already past the mouth, so the whole order goes round the far end."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Travel \xB7 35%"), " Fast movers belong close to the dock so most orders finish early. Anything in aisle 2 is a long walk."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Damage risk \xB7 25%"), " Picks land in the cart in route order. A heavy item slotted later than a crushable one goes on top of it."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Handling effort \xB7 20%"), " Weight \xD7 distance carried. Heavy cases deep in aisle 2 mean a loaded cart hauled the full route."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Species grouping \xB7 20%"), " Neighbours are the bays either side and the face across the aisle. Same-species clusters keep replenishment and store pallets tight.")), phase === "entry" && /* @__PURE__ */ React.createElement("div", { className: "entry" }, /* @__PURE__ */ React.createElement("section", { className: "entry-card" }, /* @__PURE__ */ React.createElement("h2", null, "Sign in to play"), /* @__PURE__ */ React.createElement("p", { className: "entry-sub" }, "Your score goes on the board for this device."), /* @__PURE__ */ React.createElement("label", { className: "field" }, /* @__PURE__ */ React.createElement("span", null, "Name"), /* @__PURE__ */ React.createElement(
+    } }, allSlotted ? "Run the picker \u25B8" : `${PRODUCTS.length - slottedIds.size} left to slot`))), showRules && phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "rules" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "One-way flow"), " Aisle 1 runs outbound (bay 1 \u2192 6), aisle 2 runs back to the dock (bay 6 \u2192 1). The picker never reverses, so every order is a full loop."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "The tunnel"), " A pass-through cuts the middle block between bays 3 and 4. It can only be used if ", /* @__PURE__ */ React.createElement("em", null, "every"), " line on the order sits in bays 1\u20133 \u2014 one pick in bay 4\u20136 and the picker is already past the mouth, so the whole order goes round the far end."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Travel \xB7 30%"), " Fast movers belong close to the dock so most orders finish early. Anything in aisle 2 is a long walk."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Damage risk \xB7 20%"), " Picks land in the cart in route order. A heavy item slotted later than a crushable one goes on top of it."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Stacking stability \xB7 15%"), " Big cartons need to go down first. A bulky item picked after a small one ends up balanced on top \u2014 dog beds, hay bales and cat trees are the ones to watch."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Handling effort \xB7 15%"), " Weight \xD7 distance carried. Heavy cases deep in aisle 2 mean a loaded cart hauled the full route."), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("b", null, "Species grouping \xB7 20%"), " Neighbours are the bays either side and the face across the aisle. Same-species clusters keep replenishment and store pallets tight.")), phase === "entry" && /* @__PURE__ */ React.createElement("div", { className: "entry" }, /* @__PURE__ */ React.createElement("section", { className: "entry-card" }, /* @__PURE__ */ React.createElement("h2", null, "Sign in to play"), /* @__PURE__ */ React.createElement("p", { className: "entry-sub" }, "Your score goes on the board for this device."), /* @__PURE__ */ React.createElement("label", { className: "field" }, /* @__PURE__ */ React.createElement("span", null, "Name"), /* @__PURE__ */ React.createElement(
       "input",
       {
         value: player.name,
@@ -622,7 +648,7 @@
         saveBoard([]);
         setBoard([]);
       }
-    } }, "Reset"))), /* @__PURE__ */ React.createElement(Leaderboard, { board, highlight: myEntryId }))), phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "body" }, /* @__PURE__ */ React.createElement("aside", { className: "tray" }, /* @__PURE__ */ React.createElement("div", { className: "tray-head" }, /* @__PURE__ */ React.createElement("span", { className: "tray-title" }, "SKU CATEGORIES"), /* @__PURE__ */ React.createElement("span", { className: "tray-count" }, remaining.length, " unslotted")), selProd && /* @__PURE__ */ React.createElement("div", { className: "sel-card", style: { "--sp": SPECIES[selProd.species].color } }, /* @__PURE__ */ React.createElement("div", { className: "sel-name" }, selProd.name), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Weight"), /* @__PURE__ */ React.createElement(StatDots, { label: "Weight", val: selProd.weight })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Crushability"), /* @__PURE__ */ React.createElement(StatDots, { label: "Crush", val: selProd.crush })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Velocity"), /* @__PURE__ */ React.createElement("b", null, selProd.velocity, " picks/day")), /* @__PURE__ */ React.createElement("div", { className: "sel-hint" }, "Tap a pick face to place it")), /* @__PURE__ */ React.createElement("div", { className: "chips" }, PRODUCTS.map((p) => /* @__PURE__ */ React.createElement(
+    } }, "Reset"))), /* @__PURE__ */ React.createElement(Leaderboard, { board, highlight: myEntryId }))), phase === "slot" && /* @__PURE__ */ React.createElement("div", { className: "body" }, /* @__PURE__ */ React.createElement("aside", { className: "tray" }, /* @__PURE__ */ React.createElement("div", { className: "tray-head" }, /* @__PURE__ */ React.createElement("span", { className: "tray-title" }, "SKU CATEGORIES"), /* @__PURE__ */ React.createElement("span", { className: "tray-count" }, remaining.length, " unslotted")), selProd && /* @__PURE__ */ React.createElement("div", { className: "sel-card", style: { "--sp": SPECIES[selProd.species].color } }, /* @__PURE__ */ React.createElement("div", { className: "sel-name" }, selProd.name), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Weight"), /* @__PURE__ */ React.createElement(StatDots, { label: "Weight", val: selProd.weight })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Crushability"), /* @__PURE__ */ React.createElement(StatDots, { label: "Crush", val: selProd.crush })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Cube / bulk"), /* @__PURE__ */ React.createElement(StatDots, { label: "Cube", val: selProd.cube })), /* @__PURE__ */ React.createElement("div", { className: "sel-row" }, /* @__PURE__ */ React.createElement("span", null, "Velocity"), /* @__PURE__ */ React.createElement("b", null, selProd.velocity, " picks/day")), /* @__PURE__ */ React.createElement("div", { className: "sel-hint" }, "Tap a pick face to place it")), /* @__PURE__ */ React.createElement("div", { className: "chips" }, PRODUCTS.map((p) => /* @__PURE__ */ React.createElement(
       "button",
       {
         key: p.id,
@@ -632,7 +658,7 @@
       },
       /* @__PURE__ */ React.createElement("span", { className: "chip-bar" }),
       /* @__PURE__ */ React.createElement("span", { className: "chip-name" }, p.name),
-      /* @__PURE__ */ React.createElement("span", { className: "chip-stats" }, /* @__PURE__ */ React.createElement("b", null, p.weight, "w"), /* @__PURE__ */ React.createElement("b", null, p.crush, "c"), /* @__PURE__ */ React.createElement("b", null, p.velocity, "/d"))
+      /* @__PURE__ */ React.createElement("span", { className: "chip-stats" }, /* @__PURE__ */ React.createElement("b", null, p.weight, "w"), /* @__PURE__ */ React.createElement("b", null, p.crush, "c"), /* @__PURE__ */ React.createElement("b", null, p.cube, "\u25A3"), /* @__PURE__ */ React.createElement("b", null, p.velocity, "/d"))
     ))), /* @__PURE__ */ React.createElement("div", { className: "legend" }, Object.entries(SPECIES).map(([k, v]) => /* @__PURE__ */ React.createElement("span", { key: k, className: "leg" }, /* @__PURE__ */ React.createElement("i", { style: { background: v.color } }), " ", v.label)))), /* @__PURE__ */ React.createElement("main", { className: "racks" }, AISLES.map((aisle) => /* @__PURE__ */ React.createElement("section", { key: aisle, className: "aisle" }, /* @__PURE__ */ React.createElement("div", { className: "aisle-head" }, /* @__PURE__ */ React.createElement("span", { className: "aisle-tag" }, "AISLE ", aisle), /* @__PURE__ */ React.createElement("span", { className: "aisle-dir" }, aisle === 1 ? "one-way outbound \xB7 bay 1 \u2192 6" : "one-way return \xB7 bay 6 \u2192 1"), /* @__PURE__ */ React.createElement("span", { className: "tunnel-key" }, "tunnel between bays 3 & 4")), /* @__PURE__ */ React.createElement("div", { className: "dist-strip" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag ghosted" }), BAYS.map((b) => /* @__PURE__ */ React.createElement(React.Fragment, { key: b }, /* @__PURE__ */ React.createElement("span", { className: "bay-marker" }, "BAY ", b, " \xB7 ", pathDist({ aisle, bay: b }), " m"), b === TUNNEL_AFTER_BAY && /* @__PURE__ */ React.createElement("span", { className: "tunnel-col head" }, /* @__PURE__ */ React.createElement("i", { className: "tun-arrow" }, "\u25BC"))))), SIDES.map((side) => /* @__PURE__ */ React.createElement(React.Fragment, { key: side }, /* @__PURE__ */ React.createElement("div", { className: "rack-row" }, /* @__PURE__ */ React.createElement("div", { className: "lvl-tag" }, "SIDE ", side), BAYS.map((bay) => {
       const sid = slotId(aisle, side, bay);
       const pid = assignments[sid];
@@ -646,7 +672,7 @@
           onClick: () => clickSlot(sid)
         },
         /* @__PURE__ */ React.createElement("span", { className: "slot-code" }, sid, " \xB7 ", pathDist({ aisle, bay }), " m"),
-        p ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "slot-name" }, p.name), /* @__PURE__ */ React.createElement("span", { className: "slot-meta" }, p.weight, "w \xB7 ", p.crush, "c \xB7 ", p.velocity, "/d")) : /* @__PURE__ */ React.createElement("span", { className: "slot-empty" }, selected ? "place here" : "empty")
+        p ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "slot-name" }, p.name), /* @__PURE__ */ React.createElement("span", { className: "slot-meta" }, p.weight, "w \xB7 ", p.crush, "c \xB7 ", p.cube, "\u25A3 \xB7 ", p.velocity, "/d")) : /* @__PURE__ */ React.createElement("span", { className: "slot-empty" }, selected ? "place here" : "empty")
       );
       return bay === TUNNEL_AFTER_BAY ? /* @__PURE__ */ React.createElement(React.Fragment, { key: sid }, cell, /* @__PURE__ */ React.createElement(
         "span",
@@ -657,15 +683,16 @@
         (side === "B" && aisle === 1 || side === "A" && aisle === 2) && /* @__PURE__ */ React.createElement("i", { className: "tun-arrow" }, "\u25BC"),
         /* @__PURE__ */ React.createElement("span", { className: "tun-text" }, "TUNNEL")
       )) : cell;
-    })), side === "A" && /* @__PURE__ */ React.createElement("div", { className: "flow-strip" }, /* @__PURE__ */ React.createElement("div", { className: "flow-tag" }, aisle === 1 ? "OUTBOUND" : "TO DOCK"), /* @__PURE__ */ React.createElement("div", { className: `flow-bar ${aisle === 2 ? "rev" : ""}` }, /* @__PURE__ */ React.createElement("span", { className: "flow-end" }, aisle === 1 ? "DOCK" : "\u25B2 cross aisle"), Array.from({ length: 11 }).map((_, i) => /* @__PURE__ */ React.createElement("i", { key: i, style: { animationDelay: `${(aisle === 1 ? i : 10 - i) * 0.14}s` } }, aisle === 1 ? "\u25B6" : "\u25C0")), /* @__PURE__ */ React.createElement("span", { className: "flow-end" }, aisle === 1 ? "cross aisle \u25BC" : "DOCK"))))))), /* @__PURE__ */ React.createElement("p", { className: "foot-note" }, "w weight \xB7 c crushability \xB7 /d picks per day \xB7 m walking distance from the dock. Click a category, then a pick face. Click a filled face to lift it back out."))), phase === "sim" && /* @__PURE__ */ React.createElement("div", { className: "simwrap" }, /* @__PURE__ */ React.createElement(ThreeSim, { assignments, onDone: (d) => {
+    })), side === "A" && /* @__PURE__ */ React.createElement("div", { className: "flow-strip" }, /* @__PURE__ */ React.createElement("div", { className: "flow-tag" }, aisle === 1 ? "OUTBOUND" : "TO DOCK"), /* @__PURE__ */ React.createElement("div", { className: `flow-bar ${aisle === 2 ? "rev" : ""}` }, /* @__PURE__ */ React.createElement("span", { className: "flow-end" }, aisle === 1 ? "DOCK" : "\u25B2 cross aisle"), Array.from({ length: 11 }).map((_, i) => /* @__PURE__ */ React.createElement("i", { key: i, style: { animationDelay: `${(aisle === 1 ? i : 10 - i) * 0.14}s` } }, aisle === 1 ? "\u25B6" : "\u25C0")), /* @__PURE__ */ React.createElement("span", { className: "flow-end" }, aisle === 1 ? "cross aisle \u25BC" : "DOCK"))))))), /* @__PURE__ */ React.createElement("p", { className: "foot-note" }, "w weight \xB7 c crushability \xB7 \u25A3 cube (bulk) \xB7 /d picks per day \xB7 m walking distance from the dock. Click a category, then a pick face. Click a filled face to lift it back out."))), phase === "sim" && /* @__PURE__ */ React.createElement("div", { className: "simwrap" }, /* @__PURE__ */ React.createElement(ThreeSim, { assignments, onDone: (d) => {
       setSimDist(d);
       recordScore(scores);
       setPhase("results");
     } })), phase === "results" && scores && /* @__PURE__ */ React.createElement("div", { className: "results" }, /* @__PURE__ */ React.createElement("div", { className: "score-hero" }, /* @__PURE__ */ React.createElement("div", { className: "grade", "data-g": scores.grade }, scores.grade), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "total" }, scores.total, /* @__PURE__ */ React.createElement("span", null, "/100")), /* @__PURE__ */ React.createElement("div", { className: "total-sub" }, player.name, myRank ? ` \xB7 rank ${myRank} of ${board.length}` : "", simDist != null && simDist > 0 ? ` \xB7 ${simDist} m walked this order` : ""))), /* @__PURE__ */ React.createElement("div", { className: "bars" }, [
-      ["Travel distance", scores.travel, "35%"],
-      ["Damage risk", scores.damage, "25%"],
-      ["Handling effort", scores.handling, "20%"],
-      ["Species grouping", scores.species, "20%"]
+      ["Travel distance", scores.travel, "30%"],
+      ["Damage risk", scores.damage, "20%"],
+      ["Species grouping", scores.species, "20%"],
+      ["Stacking stability", scores.stability, "15%"],
+      ["Handling effort", scores.handling, "15%"]
     ].map(([label, s, w]) => /* @__PURE__ */ React.createElement("div", { key: label, className: "bar-block" }, /* @__PURE__ */ React.createElement("div", { className: "bar-head" }, /* @__PURE__ */ React.createElement("span", null, label, " ", /* @__PURE__ */ React.createElement("em", null, w)), /* @__PURE__ */ React.createElement("b", null, s.score)), /* @__PURE__ */ React.createElement("div", { className: "bar" }, /* @__PURE__ */ React.createElement("i", { style: { width: `${s.score}%` } })), s.offenders.length ? /* @__PURE__ */ React.createElement("ul", { className: "offenders" }, s.offenders.slice(0, 3).map((o, i) => /* @__PURE__ */ React.createElement("li", { key: i }, o))) : /* @__PURE__ */ React.createElement("div", { className: "clean" }, "Clean \u2014 no findings")))), /* @__PURE__ */ React.createElement("div", { className: "results-lb" }, /* @__PURE__ */ React.createElement("div", { className: "lb-head" }, /* @__PURE__ */ React.createElement("h2", null, "Top 10"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost tiny", onClick: () => exportCsv(board) }, "Export CSV")), /* @__PURE__ */ React.createElement(Leaderboard, { board, highlight: myEntryId, compact: true })), /* @__PURE__ */ React.createElement("div", { className: "results-actions" }, /* @__PURE__ */ React.createElement("button", { className: "btn primary", onClick: () => newAttempt(false) }, "Tweak & try again"), /* @__PURE__ */ React.createElement("button", { className: "btn ghost", onClick: () => {
       setSimDist(null);
       setPhase("sim");
@@ -712,7 +739,7 @@ h1{margin:0;font-size:20px;letter-spacing:3px;font-weight:800}
 .chip.slotted{opacity:.32}
 .chip-bar{width:4px;height:22px;background:var(--sp);flex-shrink:0;border-radius:1px}
 .chip-name{flex:1;font-weight:600}
-.chip-stats{display:flex;gap:7px;font-family:ui-monospace,monospace;font-size:10.5px;color:var(--dim)}
+.chip-stats{display:flex;gap:5px;font-family:ui-monospace,monospace;font-size:9.5px;color:var(--dim)}
 .chip-stats b{font-weight:500}
 .sel-card{background:var(--panel2);border:1px solid var(--sp);border-left:4px solid var(--sp);padding:10px 12px;border-radius:3px}
 .sel-name{font-weight:700;margin-bottom:6px}
